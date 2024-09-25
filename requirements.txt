@@ -10,4 +10,3 @@ scikit-learn
 supabase-py
 datetime
 bcrypt
-base64
