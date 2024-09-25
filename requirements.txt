@@ -8,5 +8,4 @@ folium
 branca
 scikit-learn
 supabase-py
-datetime
 bcrypt
