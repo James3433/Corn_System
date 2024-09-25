@@ -1,0 +1,13 @@
+streamlit
+pandas
+matplotlib
+seaborn
+streamlit-option-menu
+geopandas
+folium
+branca
+scikit-learn
+supabase-py
+datetime
+bcrypt
+base64
