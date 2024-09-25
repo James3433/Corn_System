@@ -36,7 +36,8 @@ class MultiApp:
                     default_index=0,
                     styles={
                         "container": {"background-color": "#a3f841"},
-                        "icon": {"color": "black", "font-size": "5px"},
+                        "icon": {"color": "black", "font-size": "20px"},
+                        "menu-title": {"color": "black", "font-size": "20px", "font-family": "Source Sans Pro, sans-serif"},
                         "nav-link": {"color": "black", "font-size": "13px", "font-family": "Source Sans Pro, sans-serif"},
                         "nav-link-selected": {"background-color": "#eeff00", "font-family": "Source Sans Pro, sans-serif"}
                     }
@@ -55,13 +56,15 @@ class MultiApp:
                 show_main_menu()  # Show the main menu if the user is logged in
             else:
                 app = option_menu(
-                    menu_title='  ',
+                    menu_title='Login or Signup',
                     options=['Home', 'Sign-up', 'Log-in'],
                     menu_icon='key-fill',
                     default_index=0,
                     styles={
                         "container": {"background-color": "#a3f841"},
-                        "icon": {"color": "black", "font-size": "5px"},
+                        "icon": {"color": "black", "font-size": "20px"},
+                        "menu-title": {"color": "black", "font-size": "20px", "font-family": "Source Sans Pro, sans-serif"},
+                        "menu-icon": {"color": "black", "font-size": "40px"},
                         "nav-link": {"color": "black", "font-size": "13px", "font-family": "Source Sans Pro, sans-serif"},
                         "nav-link-selected": {"background-color": "#eeff00", "font-family": "Source Sans Pro, sans-serif"}
                     }

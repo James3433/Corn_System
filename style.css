@@ -14,6 +14,9 @@ ul.st-emotion-cache-10rjk4g.eczjsme14 li {
     width: 15em;
     margin-left: 1.5em;
 }
+h1, h2, h3, h4, h5, p {
+    color: black;
+}
 .container {
     display: grid;
     grid-template-columns: repeat(2, 2fr);
