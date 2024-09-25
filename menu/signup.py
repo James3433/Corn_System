@@ -11,7 +11,7 @@ def app():
 
     user_type_mapping = {
         'Farmer': 1,
-        'Trader': 2,
+        'Trader': 2, 
         'Consumer': 3
     }
     gender_type_mapping = {

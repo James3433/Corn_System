@@ -41,33 +41,33 @@ class MultiApp:
                         "nav-link-selected": {"background-color": "#eeff00", "font-family": "Source Sans Pro, sans-serif"}
                     }
                 )
-            #     st.markdown(f"""
-            #             <style>
-            #                 [data-testid="stSidebarHeader"]::before {{
-            #                     content: "Welcome {gender} {user}";
-            #                     font-size: 20px;
-            #                     color: black;
-            #                 }}
-            #             </style>
-            #     """, unsafe_allow_html=True)
+                st.markdown(f"""
+                        <style>
+                            [data-testid="stSidebarHeader"]::before {{
+                                content: "Welcome {gender} {user}";
+                                font-size: 20px;
+                                color: black;
+                            }}
+                        </style>
+                """, unsafe_allow_html=True)
 
-            # if st.session_state['logged_in']:
-            #     show_main_menu()  # Show the main menu if the user is logged in
-            # else:
-            #     app = option_menu(
-            #         menu_title='  ',
-            #         options=['Home', 'Sign-up', 'Log-in'],
-            #         menu_icon='key-fill',
-            #         default_index=0,
-            #         styles={
-            #             "container": {"background-color": "#a3f841"},
-            #             "icon": {"color": "black", "font-size": "5px"},
-            #             "nav-link": {"color": "black", "font-size": "13px", "font-family": "Source Sans Pro, sans-serif"},
-            #             "nav-link-selected": {"background-color": "#eeff00", "font-family": "Source Sans Pro, sans-serif"}
-            #         }
-            #     )
+            if st.session_state['logged_in']:
+                show_main_menu()  # Show the main menu if the user is logged in
+            else:
+                app = option_menu(
+                    menu_title='  ',
+                    options=['Home', 'Sign-up', 'Log-in'],
+                    menu_icon='key-fill',
+                    default_index=0,
+                    styles={
+                        "container": {"background-color": "#a3f841"},
+                        "icon": {"color": "black", "font-size": "5px"},
+                        "nav-link": {"color": "black", "font-size": "13px", "font-family": "Source Sans Pro, sans-serif"},
+                        "nav-link-selected": {"background-color": "#eeff00", "font-family": "Source Sans Pro, sans-serif"}
+                    }
+                )
             
-            show_main_menu()
+            # show_main_menu()
 
                 
         if app == 'About':
