@@ -1,4 +1,3 @@
-import pandas as pd
 import streamlit as st
 import bcrypt
 from supabase_connect import get_user_by_name
@@ -55,8 +54,9 @@ def app():
                 st.success("Login successful!")
                 # Store login status in session state to keep track of the user
                 st.session_state['logged_in'] = True
-                st.session_state['user'] = lname
+                st.session_state['fname'] = fname
+                st.session_state['lname'] = lname
                 st.session_state['gender'] = user.get('gender')
-                st.experimental_rerun() 
+                st.rerun()
             else:
                 st.error("Invalid password. Please try again.")

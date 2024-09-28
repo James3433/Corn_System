@@ -40,6 +40,14 @@ def insert_user(fname, mname, lname, age, gender, type, hashed_password):
     response = supabase.table('users').insert(data).execute()
     return response
 
+def insert_comments(user_id, comments):
+    data = {
+        "user_id": user_id,
+        "comments": comments
+    }
+    response = supabase.table('comments').insert(data).execute()
+    return response
+
 def user_exists(fname, mname, lname):
     # Query the database to check if the user already exists
     response = supabase.table('users').select('*').eq('fname', fname).eq('mname', mname).eq('lname', lname).execute()
@@ -52,4 +60,25 @@ def get_user_by_name(fname, lname):
     if response.data:
         user = response.data[0] # Get the first user found
         return user 
+    return None
+
+def get_user_id(fname, lname):
+    response = supabase.table('users').select('id').eq('fname', fname).eq('lname', lname).execute()
+    if response.data:
+        user = response.data[0] # Get the first user found
+        return user['id']
+    return None
+
+def get_user_name(id):
+    response = supabase.table('users').select('fname','lname').eq('id', id).execute()
+    if response.data:
+        user = response.data[0] # Get the first user found
+        return user['fname'], user['lname']
+    return None
+
+def get_all_comments():
+    response = supabase.table('comments').select('user_id', 'comments').execute()  # Select all first and last names
+    if response.data:
+        data = [(data['user_id'], data['comments']) for data in response.data]  # List of tuples (fname, lname)
+        return data
     return None

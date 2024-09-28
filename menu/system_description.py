@@ -24,7 +24,7 @@ def app():
 
     st.markdown(f"""
         <div class="intro">
-            <h2> Welcome to Corn.com<h3>
+            <h3> Welcome to Corn.com</h3>
             <p> Here in Corn.com we help you with your problems</p>
         </div>
         <div class="info">

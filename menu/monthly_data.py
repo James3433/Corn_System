@@ -20,8 +20,10 @@ def app():
 
     # Group the data by year based on the selected dataset
     if selected_dataset == 'White Corn Price':
+        corn_price = "White Corn Price"
         response_1, response_2, response_3, response_4, response_5 = get_white_corn_price()
     else:
+        corn_price = "Yellow Corn Price"
         response_1, response_2, response_3, response_4, response_5 = get_yellow_corn_price()
 
     # Convert the responses to DataFrames
@@ -58,22 +60,22 @@ def app():
 
     grouped = dataset_year.groupby('Month')
 
-    with st.expander(f"Price plots for the year {selected_year1}", expanded=True):
-        for month, group in grouped:
-            fig, ax = plt.subplots(figsize=(6, 4), facecolor='#B7E505') 
-            ax.set_facecolor('#B7E505') 
-            ax.plot(group['Week'], group['Price'], marker='o', markersize=4)
-                
-            ax.set_xlabel('Month', color='black')
-            ax.set_ylabel('Price', color='black')
-            ax.set_title(f'{selected_dataset} Corn Price by {month} for {selected_year1}', color='black')
-                
-            # Adjust the font size
-            for tick in ax.get_xticklabels():
-                tick.set_fontsize(8)
-                tick.set_color('black')  
-            for tick in ax.get_yticklabels():
-                tick.set_fontsize(8)
-                tick.set_color('black')  
+    st.header(f"{selected_dataset}'s {corn_price} in {selected_year1}")
+    for month, group in grouped:
+        fig, ax = plt.subplots(figsize=(6, 4), facecolor='#B7E505') 
+        ax.set_facecolor('#B7E505') 
+        ax.plot(group['Week'], group['Price'], marker='o', markersize=4)
             
-            st.pyplot(fig)
+        ax.set_xlabel('Month', color='black')
+        ax.set_ylabel('Price', color='black')
+        ax.set_title(f'{month} of {selected_year1}', color='black')
+            
+        # Adjust the font size
+        for tick in ax.get_xticklabels():
+            tick.set_fontsize(8)
+            tick.set_color('black')  
+        for tick in ax.get_yticklabels():
+            tick.set_fontsize(8)
+            tick.set_color('black')  
+        
+        st.pyplot(fig)

@@ -18,8 +18,10 @@ def app():
 
     # Group the data by year based on the selected dataset
     if selected_dataset == 'White Corn Price':
+        corn_price = "White Corn Price"
         response_1, response_2, response_3, response_4, response_5 = get_white_corn_price()
     else:
+        corn_price = "Yellow Corn Price"
         response_1, response_2, response_3, response_4, response_5 = get_yellow_corn_price()
 
     # Convert the responses to DataFrames
@@ -66,10 +68,10 @@ def app():
 
     # Plot the data
     for year, group in grouped_by_year:
-        fig, ax = plt.subplots(figsize=(14, 6), facecolor='#B7E505')  
+        fig, ax = plt.subplots(figsize=(14, 6), facecolor='#B7E505')
         ax.set_facecolor('#B7E505')
         ax.plot(group['Month Week'], group['Price'], marker='o', markersize=4)  
-        ax.set_title(f'{selected_dataset} for Year {year}', fontsize=8, color='black')
+        ax.set_title(f"{selected_dataset}'s {corn_price} for Year {year}", fontsize=8, color='black')
         ax.set_xlabel('Month', fontsize=8, color='black')  
         ax.set_ylabel('Price', fontsize=8, color='black')  
 

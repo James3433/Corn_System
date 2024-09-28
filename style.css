@@ -2,6 +2,7 @@
 section.main.st-emotion-cache-bm2z3a.ea3mdgi8{
     background-image: url(https://cdn.forumcomm.com/dims4/default/02b8142/2147483647/strip/true/crop/900x600+50+0/resize/840x560!/quality/90/?url=https%3A%2F%2Ffcc-cue-exports-brightspot.s3.us-west-2.amazonaws.com%2Fagweek%2Fbinary%2Fcopy%2Fd8%2F09%2F3a639b90b9fe9b16a0f112246ee7%2F2436185-corn-juliannegentry-istock-binary-4905386.jpg);
     background-position-x: center;
+    background-position-y: 3em;
     background-size: 100%;
     padding: 20px;
     align-items: unset;
@@ -60,7 +61,11 @@ h1, h2, h3, h4, h5, p {
     .container {
         grid-template-columns: repeat(1, 2fr);
         gap: 20px
+    } 
+    section.main.st-emotion-cache-bm2z3a.ea3mdgi8{
+        background-size: 226%;
     }
+
 }
 @media (min-width: 576px) {
     .st-emotion-cache-1jicfl2 {

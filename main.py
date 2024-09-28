@@ -1,10 +1,10 @@
 import streamlit as st
-from menu import home, monthly_data, yearly_data, predict_price, system_description, signup, login
+from menu import home, monthly_data, yearly_data, predict_price, system_description, comments, signup, login
 from streamlit_option_menu import option_menu
 
 st.set_page_config(page_title='Corn.com', page_icon='images/corn_logo.png', layout='wide')
 
-user = st.session_state.get('user', 'Guest')
+user = st.session_state.get('lname', 'Guest')
 gender = st.session_state.get('gender', 'Gender')
 
 # Check if the user is logged in by checking session state
@@ -31,7 +31,7 @@ class MultiApp:
                 nonlocal app
                 app = option_menu(
                     menu_title='Main Menu',
-                    options=['About', 'Monthly Data', 'Yearly Data', 'Predict Price'],
+                    options=['About', 'Comments', 'Monthly Data', 'Yearly Data', 'Predict Price'],
                     menu_icon='caht-text-fill',
                     default_index=0,
                     styles={
@@ -52,29 +52,31 @@ class MultiApp:
                         </style>
                 """, unsafe_allow_html=True)
 
-            if st.session_state['logged_in']:
-                show_main_menu()  # Show the main menu if the user is logged in
-            else:
-                app = option_menu(
-                    menu_title='Login or Signup',
-                    options=['Home', 'Sign-up', 'Log-in'],
-                    menu_icon='key-fill',
-                    default_index=0,
-                    styles={
-                        "container": {"background-color": "#a3f841"},
-                        "icon": {"color": "black", "font-size": "20px"},
-                        "menu-title": {"color": "black", "font-size": "20px", "font-family": "Source Sans Pro, sans-serif"},
-                        "menu-icon": {"color": "black", "font-size": "40px"},
-                        "nav-link": {"color": "black", "font-size": "13px", "font-family": "Source Sans Pro, sans-serif"},
-                        "nav-link-selected": {"background-color": "#eeff00", "font-family": "Source Sans Pro, sans-serif"}
-                    }
-                )
+            # if st.session_state['logged_in']:
+            #     show_main_menu()  # Show the main menu if the user is logged in
+            # else:
+            #     app = option_menu(
+            #         menu_title='Login or Signup',
+            #         options=['Home', 'Sign-up', 'Log-in'],
+            #         menu_icon='key-fill',
+            #         default_index=0,
+            #         styles={
+            #             "container": {"background-color": "#a3f841"},
+            #             "icon": {"color": "black", "font-size": "20px"},
+            #             "menu-title": {"color": "black", "font-size": "20px", "font-family": "Source Sans Pro, sans-serif"},
+            #             "menu-icon": {"color": "black", "font-size": "40px"},
+            #             "nav-link": {"color": "black", "font-size": "13px", "font-family": "Source Sans Pro, sans-serif"},
+            #             "nav-link-selected": {"background-color": "#eeff00", "font-family": "Source Sans Pro, sans-serif"}
+            #         }
+            #     )
             
-            # show_main_menu()
+            show_main_menu()
 
                 
         if app == 'About':
             system_description.app()
+        if app == 'Comments':
+            comments.app()
         if app == 'Monthly Data':
             monthly_data.app()
         if app == 'Yearly Data':
