@@ -10,7 +10,8 @@ def app():
     with open("style.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-    response_1, response_2, response_3, response_4, response_5 = get_white_corn_price()
+    # Mapping full month numbers to their full name
+    month_full = {1: 'January', 2: 'February', 3: 'March', 4: 'April', 5: 'May', 6: 'June', 7: 'July', 8: 'August', 9: 'September', 10: 'October', 11: 'November', 12: 'December'}
 
     corn_price = ""
     # Define the month order
@@ -33,6 +34,12 @@ def app():
     df4 = pd.DataFrame(response_4)
     df5 = pd.DataFrame(response_5)
 
+    # Map the month numbers to their full names
+    df1['month'] = df1['month'].map(month_full).astype(str)
+    df2['month'] = df2['month'].map(month_full).astype(str)
+    df3['month'] = df3['month'].map(month_full).astype(str)
+    df4['month'] = df4['month'].map(month_full).astype(str)
+    df5['month'] = df5['month'].map(month_full).astype(str)
 
     selected_region = st.selectbox("Choose an Region:", ['Davao Oriental', 'Davao City', 'Davao de Oro', 'Davao del Norte', 'Davao del Sur'])
 
@@ -53,18 +60,18 @@ def app():
         dataset = df5
 
     selected_year1 = int(st.sidebar.selectbox('Select a year', ['2018', '2019', '2020'], key='year_selector_2'))
-    dataset_year = dataset[dataset['Year'] == selected_year1]
+    dataset_year = dataset[dataset['year'] == selected_year1]
 
     # Convert the 'Month' column to a categorical type with the specified order
-    dataset_year['Month'] = pd.Categorical(dataset_year['Month'], categories=month_order, ordered=True)
+    dataset_year['month'] = pd.Categorical(dataset_year['month'], categories=month_order, ordered=True)
 
-    grouped = dataset_year.groupby('Month')
+    grouped = dataset_year.groupby('month')
 
     st.header(f"{selected_dataset}'s {corn_price} in {selected_year1}")
     for month, group in grouped:
         fig, ax = plt.subplots(figsize=(6, 4), facecolor='#B7E505') 
         ax.set_facecolor('#B7E505') 
-        ax.plot(group['Week'], group['Price'], marker='o', markersize=4)
+        ax.plot(group['week'], group['price'], marker='o', markersize=4)
             
         ax.set_xlabel('Month', color='black')
         ax.set_ylabel('Price', color='black')

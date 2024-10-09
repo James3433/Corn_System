@@ -11,8 +11,7 @@ def app():
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
     # Mapping full month names to three-letter abbreviations
-    month_abbr = {'January': 'Jan', 'February': 'Feb', 'March': 'Mar', 'April': 'Apr', 'May': 'May', 'June': 'Jun', 'July': 'Jul', 'August': 'Aug', 'September': 'Sep','October': 'Oct', 'November': 'Nov', 'December': 'Dec'
-    }
+    month_abbr = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
 
     selected_dataset = st.sidebar.selectbox("Choose an option:", ['White Corn Price', 'Yellow Corn Price'])
 
@@ -32,18 +31,18 @@ def app():
     dataset5 = pd.DataFrame(response_5)
 
     # Map the full month names to their abbreviations
-    dataset1['Month'] = dataset1['Month'].map(month_abbr).astype(str)
-    dataset2['Month'] = dataset2['Month'].map(month_abbr).astype(str)
-    dataset3['Month'] = dataset3['Month'].map(month_abbr).astype(str)
-    dataset4['Month'] = dataset4['Month'].map(month_abbr).astype(str)
-    dataset5['Month'] = dataset5['Month'].map(month_abbr).astype(str)
+    dataset1['month'] = dataset1['month'].map(month_abbr).astype(str)
+    dataset2['month'] = dataset2['month'].map(month_abbr).astype(str)
+    dataset3['month'] = dataset3['month'].map(month_abbr).astype(str)
+    dataset4['month'] = dataset4['month'].map(month_abbr).astype(str)
+    dataset5['month'] = dataset5['month'].map(month_abbr).astype(str)
 
     # Create a new column for 'Month Week'
-    dataset1['Month Week'] = dataset1['Month'] + ', Wk-' + dataset1['Week'].astype(str)
-    dataset2['Month Week'] = dataset2['Month'] + ', Wk-' + dataset2['Week'].astype(str)
-    dataset3['Month Week'] = dataset3['Month'] + ', Wk-' + dataset3['Week'].astype(str)
-    dataset4['Month Week'] = dataset4['Month'] + ', Wk-' + dataset4['Week'].astype(str)
-    dataset5['Month Week'] = dataset5['Month'] + ', Wk-' + dataset5['Week'].astype(str)
+    dataset1['Month Week'] = dataset1['month'] + ', Wk-' + dataset1['week'].astype(str)
+    dataset2['Month Week'] = dataset2['month'] + ', Wk-' + dataset2['week'].astype(str)
+    dataset3['Month Week'] = dataset3['month'] + ', Wk-' + dataset3['week'].astype(str)
+    dataset4['Month Week'] = dataset4['month'] + ', Wk-' + dataset4['week'].astype(str)
+    dataset5['Month Week'] = dataset5['month'] + ', Wk-' + dataset5['week'].astype(str)
 
     selected_region = st.selectbox("Choose an Region:", ['Davao Oriental', 'Davao City', 'Davao de Oro', 'Davao del Norte', 'Davao del Sur'])
 
@@ -64,13 +63,13 @@ def app():
         grouped = dataset5
 
     # Group the data by year
-    grouped_by_year = grouped.groupby('Year')
+    grouped_by_year = grouped.groupby('year')
 
     # Plot the data
     for year, group in grouped_by_year:
         fig, ax = plt.subplots(figsize=(14, 6), facecolor='#B7E505')
         ax.set_facecolor('#B7E505')
-        ax.plot(group['Month Week'], group['Price'], marker='o', markersize=4)  
+        ax.plot(group['Month Week'], group['price'], marker='o', markersize=4)  
         ax.set_title(f"{selected_dataset}'s {corn_price} for Year {year}", fontsize=8, color='black')
         ax.set_xlabel('Month', fontsize=8, color='black')  
         ax.set_ylabel('Price', fontsize=8, color='black')  

@@ -57,6 +57,7 @@ def app():
                 st.session_state['fname'] = fname
                 st.session_state['lname'] = lname
                 st.session_state['gender'] = user.get('gender')
+                st.session_state['user_type'] = user.get('user_type')
                 st.rerun()
             else:
                 st.error("Invalid password. Please try again.")

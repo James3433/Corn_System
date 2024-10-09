@@ -11,8 +11,9 @@ def app():
 
     user_type_mapping = {
         'Farmer': 1,
-        'Trader': 2, 
-        'Consumer': 3
+        'Trader': 2,
+        'Consumer': 3,
+        'Admin': 4
     }
     gender_type_mapping = {
         'Male': 1,
@@ -47,7 +48,7 @@ def app():
         with col_2:
             gender = st.selectbox('Gender', ['Male', 'Female'], key='gender_selector')
         with col_3:
-            type = st.selectbox('User Type', ['Farmer', 'Trader', 'Consumer'], key='type_selector')
+            type = st.selectbox('User Type', ['Farmer', 'Trader', 'Consumer', 'Admin'], key='type_selector')
         password = st.text_input(label="Password", type="password", placeholder="Password",  key="password_input")
 
         type_numeric = user_type_mapping[type]
@@ -59,7 +60,7 @@ def app():
                 if user_exists(fname, mname, lname):
                     st.warning("User with the same name already exists!")
                 else:
-                    response = insert_user(fname, mname, lname, age, type_numeric, gender_numeric,  hashed_password)
+                    response = insert_user(fname, mname, lname, age, type_numeric, gender_numeric, hashed_password)
                     if response.data:  # Successful insertion
                         st.success(f"User {fname} {mname} {lname} added successfully!")
                     elif response.error:

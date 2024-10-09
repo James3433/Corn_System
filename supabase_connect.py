@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 from supabase import create_client
 
 # # Supabase credentials
@@ -11,24 +12,44 @@ url = 'https://tejmfmrngcqvwempifkf.supabase.co'
 key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlam1mbXJuZ2NxdndlbXBpZmtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY5OTMyNjQsImV4cCI6MjA0MjU2OTI2NH0.ANyif_Z9rudaK2pH7XNF7B11T-D2eno11yatvWZZpGU'
 supabase = create_client(url, key)
 
+
 def get_white_corn_price():
-    response_1 = supabase.table('davao_oriental_white_corn_price').select('*').execute()
-    response_2 = supabase.table('davao_city_white_corn_price').select('*').execute()
-    response_3 = supabase.table('davao_de_oro_white_corn_price').select('*').execute()
-    response_4 = supabase.table('davao_del_norte_white_corn_price').select('*').execute()
-    response_5 = supabase.table('davao_del_sur_white_corn_price').select('*').execute()
-    return response_1.data, response_2.data, response_3.data, response_4.data, response_5.data
+    response = supabase.table('white_corn_price').select('*').execute()
+    white_corn_df = pd.DataFrame(response.data)
+    response_1 = white_corn_df[white_corn_df['region_id'] == 1]
+    response_2 = white_corn_df[white_corn_df['region_id'] == 2]
+    response_3 = white_corn_df[white_corn_df['region_id'] == 3]
+    response_4 = white_corn_df[white_corn_df['region_id'] == 4]
+    response_5 = white_corn_df[white_corn_df['region_id'] == 5]
+
+    return response_1, response_2, response_3, response_4, response_5
 
 def get_yellow_corn_price():
-    response_1 = supabase.table('davao_oriental_yellow_corn_price').select('*').execute()
-    response_2 = supabase.table('davao_city_yellow_corn_price').select('*').execute()
-    response_3 = supabase.table('davao_de_oro_yellow_corn_price').select('*').execute()
-    response_4 = supabase.table('davao_del_norte_yellow_corn_price').select('*').execute()
-    response_5 = supabase.table('davao_del_sur_yellow_corn_price').select('*').execute()
-    return response_1.data, response_2.data, response_3.data, response_4.data, response_5.data
+    response = supabase.table('yellow_corn_price').select('*').execute()
+    yellow_corn_df = pd.DataFrame(response.data)
+    response_1 = yellow_corn_df[yellow_corn_df['region_id'] == 1]
+    response_2 = yellow_corn_df[yellow_corn_df['region_id'] == 2]
+    response_3 = yellow_corn_df[yellow_corn_df['region_id'] == 3]
+    response_4 = yellow_corn_df[yellow_corn_df['region_id'] == 4]
+    response_5 = yellow_corn_df[yellow_corn_df['region_id'] == 5]
 
-def insert_user(fname, mname, lname, age, gender, type, hashed_password):
+    return response_1, response_2, response_3, response_4, response_5
+
+def count_id():
+    response = supabase.table('users').select('id').execute()
+    if response.data:
+        return len(response.data)
+    return 0 
+
+def insert_user(fname, mname, lname, age, type, gender, hashed_password):
+    count = supabase.table('users').select('id').execute()
+    if count.data:
+        id = len(count.data)+1
+    else:
+        id = 1 
+
     data = {
+        "id": id,
         "fname": fname,
         "mname": mname,
         "lname": lname,

@@ -102,7 +102,6 @@ def app():
     def train_models(response):
         # Load the dataset
         dataset = pd.DataFrame(response)
-        dataset['Month'] = dataset['Month'].map(month_mapping)
         
         # Drop any non-numeric columns or convert them
         x = dataset.drop(['Price', 'id'], axis=1)  # Features
