@@ -39,9 +39,6 @@ def app():
             </style>
     """, unsafe_allow_html=True)
 
-    # In your Streamlit app or console
-    comments = get_all_comments()
-
     st.markdown(f"""
             <div class="comments_intro">
                 <div class="user_name">
@@ -52,8 +49,11 @@ def app():
             </div>
     """, unsafe_allow_html=True)
 
+    # In your Streamlit app or console
+    comments = get_all_comments()
+
     with st.expander("Comments"):
-        if comments:
+        if comments and len(comments) > 0:
             for user_id, comments in comments:
                 fname, lname = get_user_name(user_id)
                 st.markdown(f"""
