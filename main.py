@@ -54,53 +54,52 @@ class MultiApp:
                         </style>
                 """, unsafe_allow_html=True)
 
-            def show_main_menu_for_admin():
-                nonlocal app
-                app = option_menu(
-                    menu_title='Main Menu',
-                    options=['About', 'Comments', 'Monthly Data', 'Yearly Data', 'Predict Price', 'Manage Data'],
-                    menu_icon='caht-text-fill',
-                    default_index=0,
-                    styles={
-                        "container": {"background-color": "#a3f841"},
-                        "icon": {"color": "black", "font-size": "20px"},
-                        "menu-title": {"color": "black", "font-size": "20px", "font-family": "Source Sans Pro, sans-serif"},
-                        "nav-link": {"color": "black", "font-size": "13px", "font-family": "Source Sans Pro, sans-serif"},
-                        "nav-link-selected": {"background-color": "#eeff00", "font-family": "Source Sans Pro, sans-serif"}
-                    }
-                )
-
-                st.markdown(f"""
-                        <style>
-                            [data-testid="stSidebarHeader"]::before {{
-                                content: "Welcome {gender} {user}";
-                                font-size: 20px;
-                                color: black;
-                            }}
-                        </style>
-                """, unsafe_allow_html=True)
-
-            # if st.session_state['logged_in'] and st.session_state['user_type'] == 4:
-            #     show_main_menu_for_admin()
-            # elif st.session_state['logged_in'] and st.session_state['user_type'] != 4:
-            #     show_main_menu_for_user()
-            # else:
+            # def show_main_menu_for_admin():
+            #     nonlocal app
             #     app = option_menu(
-            #         menu_title='Login or Signup',
-            #         options=['Home', 'Sign-up', 'Log-in'],
-            #         menu_icon='key-fill',
+            #         menu_title='Main Menu',
+            #         options=['About', 'Comments', 'Monthly Data', 'Yearly Data', 'Predict Price', 'Manage Data'],
+            #         menu_icon='caht-text-fill',
             #         default_index=0,
             #         styles={
             #             "container": {"background-color": "#a3f841"},
             #             "icon": {"color": "black", "font-size": "20px"},
             #             "menu-title": {"color": "black", "font-size": "20px", "font-family": "Source Sans Pro, sans-serif"},
-            #             "menu-icon": {"color": "black", "font-size": "40px"},
             #             "nav-link": {"color": "black", "font-size": "13px", "font-family": "Source Sans Pro, sans-serif"},
             #             "nav-link-selected": {"background-color": "#eeff00", "font-family": "Source Sans Pro, sans-serif"}
             #         }
             #     )
-            
-            show_main_menu_for_admin()
+
+            #     st.markdown(f"""
+            #             <style>
+            #                 [data-testid="stSidebarHeader"]::before {{
+            #                     content: "Welcome {gender} {user}";
+            #                     font-size: 20px;
+            #                     color: black;
+            #                 }}
+            #             </style>
+            #     """, unsafe_allow_html=True)
+
+            # if st.session_state['logged_in'] and st.session_state['user_type'] == 4:
+            #     show_main_menu_for_admin()
+
+            if st.session_state['logged_in'] and st.session_state['user_type'] != 4:
+                show_main_menu_for_user()
+            else:
+                app = option_menu(
+                    menu_title='Login or Signup',
+                    options=['Home', 'Sign-up', 'Log-in'],
+                    menu_icon='key-fill',
+                    default_index=0,
+                    styles={
+                        "container": {"background-color": "#a3f841"},
+                        "icon": {"color": "black", "font-size": "20px"},
+                        "menu-title": {"color": "black", "font-size": "20px", "font-family": "Source Sans Pro, sans-serif"},
+                        "menu-icon": {"color": "black", "font-size": "40px"},
+                        "nav-link": {"color": "black", "font-size": "13px", "font-family": "Source Sans Pro, sans-serif"},
+                        "nav-link-selected": {"background-color": "#eeff00", "font-family": "Source Sans Pro, sans-serif"}
+                    }
+                )
 
                 
         if app == 'About':
