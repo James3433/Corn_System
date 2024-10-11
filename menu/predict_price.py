@@ -104,8 +104,8 @@ def app():
         dataset = pd.DataFrame(response)
         
         # Drop any non-numeric columns or convert them
-        x = dataset.drop(['Price', 'id'], axis=1)  # Features
-        y = dataset['Price']  # Target variable
+        x = dataset.drop(['price', 'id', 'region_id', 'user_id'], axis=1)  # Features
+        y = dataset['price']  # Target variable
 
         # Split the data into training and testing sets
         X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
@@ -165,9 +165,9 @@ def app():
         if Month and Year:
             # Create the input_data DataFrame
             input_data = pd.DataFrame({
-                'Month': [int(month_mapping[Month])],  # Convert month name to numeric
-                'Week': [1],  # Assuming Week is always 1 for this example
-                'Year': [int(Year)]  # Convert year to integer
+                'month': [int(month_mapping[Month])],  # Convert month name to numeric
+                'week': [1],  # Assuming Week is always 1 for this example
+                'year': [int(Year)]  # Convert year to integer
             })
 
             # Make predictions using the Random Forest model for both datasets
