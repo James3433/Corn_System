@@ -12,28 +12,40 @@ url = 'https://tejmfmrngcqvwempifkf.supabase.co'
 key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlam1mbXJuZ2NxdndlbXBpZmtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY5OTMyNjQsImV4cCI6MjA0MjU2OTI2NH0.ANyif_Z9rudaK2pH7XNF7B11T-D2eno11yatvWZZpGU'
 supabase = create_client(url, key)
 
-
 def get_white_corn_price():
-    response = supabase.table('white_corn_price').select('*').execute()
-    white_corn_df = pd.DataFrame(response.data)
-    response_1 = white_corn_df[white_corn_df['region_id'] == 1]
-    response_2 = white_corn_df[white_corn_df['region_id'] == 2]
-    response_3 = white_corn_df[white_corn_df['region_id'] == 3]
-    response_4 = white_corn_df[white_corn_df['region_id'] == 4]
-    response_5 = white_corn_df[white_corn_df['region_id'] == 5]
+    response_1 = supabase.table('white_corn_price_data').select('*').eq('province_id', 1).execute()
+    response_2 = supabase.table('white_corn_price_data').select('*').eq('province_id', 2).execute()
+    response_3 = supabase.table('white_corn_price_data').select('*').eq('province_id', 3).execute()
+    response_4 = supabase.table('white_corn_price_data').select('*').eq('province_id', 4).execute()
+    response_5 = supabase.table('white_corn_price_data').select('*').eq('province_id', 5).execute()
+    response_6 = supabase.table('white_corn_price_data').select('*').eq('province_id', 6).execute()
 
-    return response_1, response_2, response_3, response_4, response_5
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+    response_5 = pd.DataFrame(response_5.data)
+    response_6 = pd.DataFrame(response_6.data)
+
+    return response_1, response_2, response_3, response_4, response_5, response_6
+
 
 def get_yellow_corn_price():
-    response = supabase.table('yellow_corn_price').select('*').execute()
-    yellow_corn_df = pd.DataFrame(response.data)
-    response_1 = yellow_corn_df[yellow_corn_df['region_id'] == 1]
-    response_2 = yellow_corn_df[yellow_corn_df['region_id'] == 2]
-    response_3 = yellow_corn_df[yellow_corn_df['region_id'] == 3]
-    response_4 = yellow_corn_df[yellow_corn_df['region_id'] == 4]
-    response_5 = yellow_corn_df[yellow_corn_df['region_id'] == 5]
+    response_1 = supabase.table('yellow_corn_price_data').select('*').eq('province_id', 1).execute()
+    response_2 = supabase.table('yellow_corn_price_data').select('*').eq('province_id', 2).execute()
+    response_3 = supabase.table('yellow_corn_price_data').select('*').eq('province_id', 3).execute()
+    response_4 = supabase.table('yellow_corn_price_data').select('*').eq('province_id', 4).execute()
+    response_5 = supabase.table('yellow_corn_price_data').select('*').eq('province_id', 5).execute()
+    response_6 = supabase.table('yellow_corn_price_data').select('*').eq('province_id', 6).execute()
 
-    return response_1, response_2, response_3, response_4, response_5
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+    response_5 = pd.DataFrame(response_5.data)
+    response_6 = pd.DataFrame(response_6.data)
+
+    return response_1, response_2, response_3, response_4, response_5, response_6
 
 def count_id():
     response = supabase.table('users').select('id').execute()
@@ -91,10 +103,10 @@ def get_user_id(fname, lname):
     return None
 
 def get_user_name(id):
-    response = supabase.table('users').select('fname','lname').eq('id', id).execute()
+    response = supabase.table('users').select('fname','lname', 'user_type').eq('id', id).execute()
     if response.data:
         user = response.data[0] # Get the first user found
-        return user['fname'], user['lname']
+        return user['fname'], user['lname'], user['user_type']
     return None
 
 def get_all_comments():
@@ -103,3 +115,339 @@ def get_all_comments():
         data = [(data['user_id'], data['comments']) for data in response.data]  # List of tuples (fname, lname)
         return data
     return None
+
+
+def get_user_by_user_type(user_type):
+    response = supabase.table('users').select('id, fname, mname, lname').eq('user_type', user_type).execute()
+    if response.data:
+        usernames = [f"{data['fname']} {data['mname']} {data['lname']} = {data['id']}" for data in response.data]  # List of tuples (id, fname, mname, lname)
+        return usernames
+    return None
+
+
+def get_white_corn_fertilizer_data():
+    response = supabase.table('white_corn_fertilizer_data').select('*').gte('year', 2020).execute()
+
+    return response.data
+
+def get_yellow_corn_fertilizer_data():
+    response = supabase.table('yellow_corn_fertilizer_data').select('*').gte('year', 2020).execute()
+
+    return response.data
+
+
+
+def get_white_corn_price_data():
+    response = supabase.table('white_corn_price_data').select('*').gte('year', 2020).execute()
+
+    return response.data
+
+def get_yellow_corn_price_data():
+    response = supabase.table('yellow_corn_price_data').select('*').gte('year', 2020).execute()
+
+    return response.data
+
+
+
+def get_white_corn_production_data():
+    response = supabase.table('white_corn_production_data').select('*').gte('year', 2020).execute()
+
+    return response.data
+
+def get_yellow_corn_production_data():
+    response = supabase.table('yellow_corn_production_data').select('*').gte('year', 2020).execute()
+
+    return response.data
+
+
+
+def get_white_corn_weather_data():
+    response = supabase.table('white_corn_weather_data').select('*').gte('year', 2020).execute()
+
+    return response.data
+
+def get_yellow_corn_weather_data():
+    response = supabase.table('yellow_corn_weather_data').select('*').gte('year', 2020).execute()
+
+    return response.data
+
+
+
+
+def get_white_davao_region_dataset():
+    response_1 = supabase.table('white_corn_production_data').select('*').eq('province_id', 1).execute()
+    response_2 = supabase.table('white_corn_fertilizer_data').select('*').eq('province_id', 1).execute()
+    response_3 = supabase.table('white_corn_weather_data').select('*').eq('province_id', 1).execute()
+    response_4 = supabase.table('white_corn_price_data').select('*').eq('province_id', 1).execute()
+
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+
+    return response_1, response_2, response_3, response_4
+    
+
+def get_white_davao_de_oro_dataset():
+    response_1 = supabase.table('white_corn_production_data').select('*').eq('province_id', 2).execute()
+    response_2 = supabase.table('white_corn_fertilizer_data').select('*').eq('province_id', 2).execute()
+    response_3 = supabase.table('white_corn_weather_data').select('*').eq('province_id', 2).execute()
+    response_4 = supabase.table('white_corn_price_data').select('*').eq('province_id', 2).execute()
+
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+
+    return response_1, response_2, response_3, response_4
+    
+
+def get_white_davao_del_norte_dataset():
+    response_1 = supabase.table('white_corn_production_data').select('*').eq('province_id', 3).execute()
+    response_2 = supabase.table('white_corn_fertilizer_data').select('*').eq('province_id', 3).execute()
+    response_3 = supabase.table('white_corn_weather_data').select('*').eq('province_id', 3).execute()
+    response_4 = supabase.table('white_corn_price_data').select('*').eq('province_id', 3).execute()
+
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+
+    return response_1, response_2, response_3, response_4
+    
+
+def get_white_davao_del_sur_dataset():
+    response_1 = supabase.table('white_corn_production_data').select('*').eq('province_id', 4).execute()
+    response_2 = supabase.table('white_corn_fertilizer_data').select('*').eq('province_id', 4).execute()
+    response_3 = supabase.table('white_corn_weather_data').select('*').eq('province_id', 4).execute()
+    response_4 = supabase.table('white_corn_price_data').select('*').eq('province_id', 4).execute()
+
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+
+    return response_1, response_2, response_3, response_4
+    
+
+def get_white_davao_oriental_dataset():
+    response_1 = supabase.table('white_corn_production_data').select('*').eq('province_id', 5).execute()
+    response_2 = supabase.table('white_corn_fertilizer_data').select('*').eq('province_id', 5).execute()
+    response_3 = supabase.table('white_corn_weather_data').select('*').eq('province_id', 5).execute()
+    response_4 = supabase.table('white_corn_price_data').select('*').eq('province_id', 5).execute()
+
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+
+    return response_1, response_2, response_3, response_4
+    
+
+def get_white_davao_city_dataset():
+    response_1 = supabase.table('white_corn_production_data').select('*').eq('province_id', 6).execute()
+    response_2 = supabase.table('white_corn_fertilizer_data').select('*').eq('province_id', 6).execute()
+    response_3 = supabase.table('white_corn_weather_data').select('*').eq('province_id', 6).execute()
+    response_4 = supabase.table('white_corn_price_data').select('*').eq('province_id', 6).execute()
+
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+
+    return response_1, response_2, response_3, response_4
+    
+
+
+
+
+def get_yellow_davao_region_dataset():
+    response_1 = supabase.table('yellow_corn_production_data').select('*').eq('province_id', 1).execute()
+    response_2 = supabase.table('yellow_corn_fertilizer_data').select('*').eq('province_id', 1).execute()
+    response_3 = supabase.table('yellow_corn_weather_data').select('*').eq('province_id', 1).execute()
+    response_4 = supabase.table('yellow_corn_price_data').select('*').eq('province_id', 1).execute()
+
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+
+    return response_1, response_2, response_3, response_4
+    
+
+def get_yellow_davao_de_oro_dataset():
+    response_1 = supabase.table('yellow_corn_production_data').select('*').eq('province_id', 2).execute()
+    response_2 = supabase.table('yellow_corn_fertilizer_data').select('*').eq('province_id', 2).execute()
+    response_3 = supabase.table('yellow_corn_weather_data').select('*').eq('province_id', 2).execute()
+    response_4 = supabase.table('yellow_corn_price_data').select('*').eq('province_id', 2).execute()
+
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+
+    return response_1, response_2, response_3, response_4
+    
+
+def get_yellow_davao_del_norte_dataset():
+    response_1 = supabase.table('yellow_corn_production_data').select('*').eq('province_id', 3).execute()
+    response_2 = supabase.table('yellow_corn_fertilizer_data').select('*').eq('province_id', 3).execute()
+    response_3 = supabase.table('yellow_corn_weather_data').select('*').eq('province_id', 3).execute()
+    response_4 = supabase.table('yellow_corn_price_data').select('*').eq('province_id', 3).execute()
+
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+
+    return response_1, response_2, response_3, response_4
+    
+
+def get_yellow_davao_del_sur_dataset():
+    response_1 = supabase.table('yellow_corn_production_data').select('*').eq('province_id', 4).execute()
+    response_2 = supabase.table('yellow_corn_fertilizer_data').select('*').eq('province_id', 4).execute()
+    response_3 = supabase.table('yellow_corn_weather_data').select('*').eq('province_id', 4).execute()
+    response_4 = supabase.table('yellow_corn_price_data').select('*').eq('province_id', 4).execute()
+
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+
+    return response_1, response_2, response_3, response_4
+    
+
+def get_yellow_davao_oriental_dataset():
+    response_1 = supabase.table('yellow_corn_production_data').select('*').eq('province_id', 5).execute()
+    response_2 = supabase.table('yellow_corn_fertilizer_data').select('*').eq('province_id', 5).execute()
+    response_3 = supabase.table('yellow_corn_weather_data').select('*').eq('province_id', 5).execute()
+    response_4 = supabase.table('yellow_corn_price_data').select('*').eq('province_id', 5).execute()
+
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+
+    return response_1, response_2, response_3, response_4
+    
+
+def get_yellow_davao_city_dataset():
+    response_1 = supabase.table('yellow_corn_production_data').select('*').eq('province_id', 6).execute()
+    response_2 = supabase.table('yellow_corn_fertilizer_data').select('*').eq('province_id', 6).execute()
+    response_3 = supabase.table('yellow_corn_weather_data').select('*').eq('province_id', 6).execute()
+    response_4 = supabase.table('yellow_corn_price_data').select('*').eq('province_id', 6).execute()
+
+    response_1 = pd.DataFrame(response_1.data)
+    response_2 = pd.DataFrame(response_2.data)
+    response_3 = pd.DataFrame(response_3.data)
+    response_4 = pd.DataFrame(response_4.data)
+
+    return response_1, response_2, response_3, response_4
+    
+
+
+
+
+def submit_predictions_fertilizer(predictions_df, user_id, corn_type):
+    # Prepare data for insertion
+    data_to_insert = []
+    
+    for index, row in predictions_df.iterrows():
+        data_to_insert.append({
+            'year': int(row['year']),  # Assuming 'Year' is a column in predictions_df
+            'month': int(row['month']),  # Assuming 'Month' is a column in predictions_df
+            'province_id': int(row['province_id']),  # Assuming 'province_id' is already included
+            'ammophos_price': float(row['ammophos_price']),  # Assuming this column exists
+            'ammosul_price': float(row['ammosul_price']),  # Assuming this column exists
+            'complete_price': float(row['complete_price']),  # Assuming this column exists
+            'urea_price': float(row['urea_price']),  # Assuming this column exists
+            'user_id': user_id  # Pass the user ID as needed
+        })
+
+    # Insert data into Supabase table
+    if corn_type == "White Corn":
+        response = supabase.table('white_corn_fertilizer_data').insert(data_to_insert).execute()
+    elif corn_type == "Yellow Corn":
+        response = supabase.table('yellow_corn_fertilizer_data').insert(data_to_insert).execute()
+
+
+
+
+
+def submit_predictions_price(predictions_df, user_id, corn_type):
+    # Prepare data for insertion
+    data_to_insert = []
+    
+    for index, row in predictions_df.iterrows():
+        data_to_insert.append({
+            'year': int(row['year']),  # Assuming 'Year' is a column in predictions_df
+            'month': int(row['month']),  # Assuming 'Month' is a column in predictions_df
+            'province_id': int(row['province_id']),  # Assuming 'province_id' is already included
+            'farmgate_corngrains_price': float(row['farmgate_corngrains_price']),  # Assuming this column exists
+            'retail_corngrits_price': float(row['retail_corngrits_price']),  # Assuming this column exists
+            'wholesale_corngrits_price': float(row['wholesale_corngrits_price']),  # Assuming this column exists
+            'user_id': user_id  # Pass the user ID as needed
+        })
+
+    # Insert data into Supabase table
+    if corn_type == "White Corn":
+        response = supabase.table('white_corn_price_data').insert(data_to_insert).execute()
+    elif corn_type == "Yellow Corn":
+        response = supabase.table('yellow_corn_price_data').insert(data_to_insert).execute()
+
+
+
+def submit_predictions_production(predictions_df, user_id, corn_type):
+    # Prepare data for insertion
+    data_to_insert = []
+    
+    for index, row in predictions_df.iterrows():
+        data_to_insert.append({
+            'year': int(row['year']),  # Assuming 'Year' is a column in predictions_df
+            'month': int(row['month']),  # Assuming 'Month' is a column in predictions_df
+            'province_id': int(row['province_id']),  # Assuming 'province_id' is already included
+            'corn_production': float(row['corn_production']),  # Assuming this column exists
+            'user_id': user_id  # Pass the user ID as needed
+        })
+
+    # Insert data into Supabase table
+    if corn_type == "White Corn":
+        response = supabase.table('white_corn_production_data').insert(data_to_insert).execute()
+    elif corn_type == "Yellow Corn":
+        response = supabase.table('yellow_corn_production_data').insert(data_to_insert).execute()
+
+
+def submit_predictions_weather(predictions_df, user_id, corn_type):
+    # Prepare data for insertion
+    data_to_insert = []
+    
+    for index, row in predictions_df.iterrows():
+        data_to_insert.append({
+            'year': int(row['year']),  # Assuming 'Year' is a column in predictions_df
+            'month': int(row['month']),  # Assuming 'Month' is a column in predictions_df
+            'province_id': int(row['province_id']),  # Assuming 'province_id' is already included
+            'tempmax': float(row['tempmax']),  # Assuming this column exists
+            'tempmin': float(row['tempmin']),  # Assuming this column exists
+            'temp': float(row['temp']),  # Assuming this column exists
+            'dew': float(row['dew']),  # Assuming this column exists
+            'humidity': float(row['humidity']),  # Assuming this column exists
+            'precip': float(row['precip']),  # Assuming this column exists
+            'precipprob': float(row['precipprob']),  # Assuming this column exists
+            'precipcover': float(row['precipcover']),  # Assuming this column exists
+            'windspeed': float(row['windspeed']),  # Assuming this column exists
+            'sealevelpressure': float(row['sealevelpressure']),  # Assuming this column exists
+            'visibility': float(row['visibility']),  # Assuming this column exists
+            'solarradiation': float(row['solarradiation']),  # Assuming this column exists
+            'uvindex': float(row['uvindex']),  # Assuming this column exists
+            'severerisk': float(row['severerisk']),  # Assuming this column exists
+            'cloudcover': float(row['cloudcover']),  # Assuming this column exists
+            'conditions': float(row['conditions']),  # Assuming this column exists
+            'user_id': user_id  # Pass the user ID as needed
+        })
+
+    # Insert data into Supabase table
+    if corn_type == "White Corn":
+        response = supabase.table('white_corn_weather_data').insert(data_to_insert).execute()
+    elif corn_type == "Yellow Corn":
+        response = supabase.table('yellow_corn_weather_data').insert(data_to_insert).execute()
+

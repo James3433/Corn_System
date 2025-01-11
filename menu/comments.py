@@ -12,10 +12,15 @@ def app():
     
     img_1 = get_img_as_base64("images/user.png")
 
-    fname = st.session_state.get('fname', 'James')
-    lname = st.session_state.get('lname', 'Boncales')
+    fname = st.session_state.get('fname', 'First Name')
+    lname = st.session_state.get('lname', 'Last Name')
+    user_type = st.session_state.get('user_type', 'User Type')
 
-    with open("style.css") as f:
+    user_type_num = {1: "Farmer", 2: "Trader", 3: "Consumer", 4: "Admin"}
+
+    user_type = user_type_num[user_type]
+
+    with open("styles/style.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
     st.markdown(f"""
@@ -43,7 +48,7 @@ def app():
             <div class="comments_intro">
                 <div class="user_name">
                     <img src="data:image/png;base64,{img_1}" alt="A beautiful landscape" width="40px" height="40px">
-                    <h4>{fname} {lname}</h4>
+                    <h4>{fname} {lname} ({user_type})</h4>
                 </div>
                 <h4>Comments</h4>
             </div>
@@ -51,16 +56,20 @@ def app():
 
     # In your Streamlit app or console
     comments = get_all_comments()
+    comments_count = len(comments)
 
-    with st.expander("Comments"):
+    user_type_num = {1: "Farmer", 2: "Trader", 3: "Consumer", 4: "Consumer"}
+
+    with st.expander(f"Comments ({comments_count})"):
         if comments and len(comments) > 0:
             for user_id, comments in comments:
-                fname, lname = get_user_name(user_id)
+                fname, lname, user_type = get_user_name(user_id)
+                user_type = user_type_num[user_type]
                 st.markdown(f"""
                 <div class="comment_box">
                     <div class="user_name">
                         <img src="data:image/png;base64,{img_1}" alt="A beautiful landscape" width="30px" height="30px">
-                        <h5>{fname} {lname}</h5>
+                        <h5>{fname} {lname} ({user_type})</h5>
                     </div>
                     <p>{comments}</p>
                 </div>

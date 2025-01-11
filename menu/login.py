@@ -8,7 +8,7 @@ def app():
     lname = ''
 
     # Load custom CSS
-    with open("style.css") as f:
+    with open("styles/style.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
     st.markdown(f"""
@@ -54,6 +54,7 @@ def app():
                 st.success("Login successful!")
                 # Store login status in session state to keep track of the user
                 st.session_state['logged_in'] = True
+                st.session_state['user_id'] = user.get('id')
                 st.session_state['fname'] = fname
                 st.session_state['lname'] = lname
                 st.session_state['gender'] = user.get('gender')

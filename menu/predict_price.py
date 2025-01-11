@@ -5,7 +5,7 @@ import geopandas as gpd
 
 from branca.colormap import linear
 from sklearn.model_selection import train_test_split
-from supabase_connect import get_white_corn_price, get_yellow_corn_price
+from supabase_connect import get_white_davao_region_dataset, get_white_davao_de_oro_dataset, get_white_davao_del_norte_dataset, get_white_davao_del_sur_dataset, get_white_davao_oriental_dataset, get_white_davao_city_dataset
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LassoCV
 from datetime import datetime
@@ -13,7 +13,7 @@ from datetime import datetime
 def app():
 
     # Load custom CSS
-    with open("style.css") as f:
+    with open("styles/style.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
     # Get the current year and month
@@ -30,74 +30,73 @@ def app():
         'September': 9, 'October': 10, 'November': 11, 'December': 12
     }
 
-    def heatmap(dataset, title):
-        # Load the GeoJSON file
-        geo_data = gpd.read_file('ph.json')
+    # def heatmap(dataset, title):
+    #     # Load the GeoJSON file
+    #     geo_data = gpd.read_file('ph.json')
 
-        # Merge dataset with GeoJSON data
-        geo_data = geo_data.merge(dataset, left_on='name', right_on='province', how='left')
+    #     # Merge dataset with GeoJSON data
+    #     geo_data = geo_data.merge(dataset, left_on='name', right_on='province', how='left')
 
-        # Create the base map
-        map = folium.Map(location=[6.8, 125.95], 
-                        zoom_start=8, 
-                        scrollWheelZoom=False,
-                        doubleClickZoom=False,
-                        dragging=False,
-                        tiles="cartodbpositron")
+    #     # Create the base map
+    #     map = folium.Map(location=[6.8, 125.95], 
+    #                     zoom_start=8, 
+    #                     scrollWheelZoom=False,
+    #                     doubleClickZoom=False,
+    #                     dragging=False,
+    #                     tiles="cartodbpositron")
 
-        # Create a linear colormap
-        colormap = linear.YlOrRd_09.scale(
-            dataset['RERF'].min(), 
-            dataset['RERF'].max()
-        )
+    #     # Create a linear colormap
+    #     colormap = linear.YlOrRd_09.scale(
+    #         dataset['RERF'].min(), 
+    #         dataset['RERF'].max()
+    #     )
 
-        colormap.caption = f'{title} in Davao Region'
+    #     colormap.caption = f'{title} in Davao Region'
 
-        # Create the choropleth layer
-        choropleth = folium.Choropleth(
-            geo_data=geo_data,
-            data=dataset,
-            columns=['province', 'RERF'],
-            key_on='feature.properties.name',
-            fill_color='YlOrRd',  # Using the color scale for yellow to red
-            fill_opacity=0.7,
-            line_opacity=0.2,
-            highlight=True,
-            nan_fill_color='white',  # Color for missing values
-            legend_name= f'{title} in Davao Region'
-        ).add_to(map)
+    #     # Create the choropleth layer
+    #     choropleth = folium.Choropleth(
+    #         geo_data=geo_data,
+    #         data=dataset,
+    #         columns=['province', 'RERF'],
+    #         key_on='feature.properties.name',
+    #         fill_color='YlOrRd',  # Using the color scale for yellow to red
+    #         fill_opacity=0.7,
+    #         line_opacity=0.2,
+    #         highlight=True,
+    #         nan_fill_color='white',  # Color for missing values
+    #         legend_name= f'{title} in Davao Region'
+    #     ).add_to(map)
 
-        # Add tooltips
-        folium.GeoJson(
-            geo_data,
-            style_function=lambda feature: {
-                'fillColor': colormap(feature['properties']['RERF'])
-                if feature['properties']['RERF'] is not None
-                else 'white',
-                'color': 'black',
-                'weight': 0.2,
-                'fillOpacity': 0.7,
-            },
-            tooltip=folium.GeoJsonTooltip(
-                fields=['name', 'RERF'],
-                aliases=['Province: ', 'Predited Price: '],
-                localize=True
-            )
-        ).add_to(map)
+    #     # Add tooltips
+    #     folium.GeoJson(
+    #         geo_data,
+    #         style_function=lambda feature: {
+    #             'fillColor': colormap(feature['properties']['RERF'])
+    #             if feature['properties']['RERF'] is not None
+    #             else 'white',
+    #             'color': 'black',
+    #             'weight': 0.2,
+    #             'fillOpacity': 0.7,
+    #         },
+    #         tooltip=folium.GeoJsonTooltip(
+    #             fields=['name', 'RERF'],
+    #             aliases=['Province: ', 'Predited Price: '],
+    #             localize=True
+    #         )
+    #     ).add_to(map)
 
-        # Save the map as an HTML file
-        map.save('./map.html')
+    #     # Save the map as an HTML file
+    #     map.save('./map.html')
 
-        # Display the map in Streamlit
-        with open('./map.html', 'r', encoding='utf-8') as f:
-            html_data = f.read()
-            st.components.v1.html(html_data, width=500, height=650)
+    #     # Display the map in Streamlit
+    #     with open('./map.html', 'r', encoding='utf-8') as f:
+    #         html_data = f.read()
+    #         st.components.v1.html(html_data, width=500, height=650)
 
 # ===================================================================================================
 
     # Fetch responses
-    response_1, response_2, response_3, response_4, response_5 = get_white_corn_price()
-    response_6, response_7, response_8, response_9, response_10 = get_yellow_corn_price()
+    white_prod_dr, white_fertil_dr, white_weather_dr, white_price_dr = get_white_davao_region_dataset()
 
     def train_models(response):
         # Load the dataset
@@ -303,3 +302,116 @@ def app():
         else:
             st.warning("Please fill in all the fields.")
 
+
+
+        # # Initialize an empty DataFrame to collect all predictions
+        # davao_region = pd.DataFrame()
+        # davao_de_oro = pd.DataFrame()
+        # davao_del_norte = pd.DataFrame()
+        # davao_del_sur = pd.DataFrame()
+        # davao_oriental = pd.DataFrame()
+        # davao_city = pd.DataFrame()
+
+        # for province_name, config in province_configs.items():
+        #     f_star = config['f_star']
+        #     r_star = config['r_star']
+        #     w_star = config['w_star']
+        #     province_id = config['province_id'] # Get the province ID
+            
+        #     # Call the dataset function for the current province
+        #     response_1, response_2, response_3, response_4 = config['get_dataset_func']()
+            
+        #     # Merge datasets
+        #     dataset = merge_dataset(response_1, response_2, response_3, response_4)
+            
+        #     # Predict dataset using the parameters
+        #     predict_df = predict_dataset(dataset,
+        #                                 f_star[0], f_star[1], f_star[2], 
+        #                                 r_star[0], r_star[1], r_star[2], 
+        #                                 w_star[0], w_star[1], w_star[2])
+            
+        #     # Add province_id to predict_df
+        #     predict_df['province_id'] = province_id
+            
+        #     # Manage plotting for the current province
+        #     manage_plot(predict_df, province_name)
+
+        #     if province_id == 1:
+        #         davao_region = predict_df
+        #     elif province_id == 2:
+        #         davao_de_oro = predict_df
+        #     elif province_id == 3:
+        #         davao_del_norte = predict_df
+        #     elif province_id == 4:
+        #         davao_del_sur = predict_df
+        #     elif province_id == 5:
+        #         davao_oriental = predict_df
+        #     elif province_id == 6:
+        #         davao_city = predict_df
+
+        #     # Append the current predict_df to predictions_df
+        #     # predictions_df = pd.concat([predictions_df, predict_df], ignore_index=True)
+
+        # # Mapping from month abbreviations to full month names
+        # month_abbr = {'Jan': 'January','Feb': 'February','Mar': 'March','Apr': 'April','May': 'May','Jun': 'June',
+        #             'Jul': 'July','Aug': 'August','Sep': 'September','Oct': 'October','Nov': 'November','Dec': 'December'}
+        
+        # # Month mapping dictionary
+        # month_mapping = {
+        #     'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6, 'July': 7, 
+        #     'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12
+        # }
+
+        # # List of datasets for iteration
+        # datasets = [davao_region, davao_de_oro, davao_del_norte, davao_del_sur, davao_oriental, davao_city]
+        # # Mapping full month names to three-letter abbreviations
+
+        # # Create an empty DataFrame for the combined data
+        # combined_dataset = pd.DataFrame()
+
+        # # Get the max number of rows from the datasets to iterate over
+        # max_rows = max(len(dataset) for dataset in datasets)
+
+        # #  Loop through each row index
+        # for i in range(max_rows):
+        #     # Loop through each dataset
+        #     for dataset in datasets:
+        #         if i < len(dataset):
+        #             # Get the current row and assign the region
+        #             row = dataset.iloc[i].copy()  # Copy the row to avoid SettingWithCopyWarning
+
+        #             # Append the row to the combined dataset
+        #             combined_dataset = pd.concat([combined_dataset, row.to_frame().T], ignore_index=True)
+
+        # # Convert conditions column to integers using mapping
+        # combined_dataset['month'] = combined_dataset['month'].map(month_abbr)
+
+        # st.dataframe(combined_dataset)
+        # last_month = dataset['month'].iloc[-1]
+        # last_year = dataset['year'].iloc[-1]
+
+        # # Collect user inputs
+        # Month = st.selectbox("Month", list(month_mapping.keys()), index=last_month)
+
+        # # Determine the default year based on the selected month
+        # selected_month_num = month_mapping[Month]
+
+        # # Get unique values from the 'year' column and convert to a list
+        # year_option_list = predict_df['year'].unique().tolist()
+
+        # # Check if Month input is valid and adjust Year accordingly
+        # if int(selected_month_num) < int(last_month):
+        #     Year = last_year + 1  # Increment year by 1 if selected month is less than last month
+        # else:
+        #     Year = last_year       # Default to the last year if not incrementing
+
+        # # Ensure Year is in the list of options for the selectbox
+        # if Year not in year_option_list:
+        #     year_option_list.append(Year)  # Add Year to options if it's not already present
+
+        # # Select Year with default index based on Year variable
+        # Year = st.selectbox("Select Year", sorted(year_option_list), index=year_option_list.index(Year))
+
+        # # Display selected values for debugging
+        # st.write(f"Selected Month: {Month}")
+        # st.write(f"Selected Year: {Year}")

@@ -7,6 +7,15 @@ section.main.st-emotion-cache-bm2z3a.ea3mdgi8{
     padding: 20px;
     align-items: unset;
 }
+
+
+.st-emotion-cache-6qob1r.eczjsme8 {
+    background-image: url(https://t4.ftcdn.net/jpg/08/05/28/19/360_F_805281949_CH7sKUKknBeGiKIQ3FttaIgKlnY7buUU.jpg);
+    background-position-x: -56em;
+    background-size: 501%;
+}
+
+
 .stAppViewBlockContainer.block-container.st-emotion-cache-13ln4jf.ea3mdgi5{
     max-width: 100%;
 }
@@ -47,6 +56,9 @@ h1, h2, h3, h4, h5, p {
     font-weight: 600;
     margin: 0px 0px;
 }
+
+
+/* app description design */
 .info {
     position: center;
     display: grid;
@@ -83,4 +95,27 @@ h1, h2, h3, h4, h5, p {
 }
 .info img {
     margin-right: 20px;
+}
+
+[data-testid="stSidebarCollapseButton"]{
+    transition: left 300ms;
+    color: rgb(0 0 0);
+    height: 2.6em;
+    width: 2.6em;
+    padding: 3px 0px 0px 1px;
+    line-height: 0;
+    background-color: #feff00;
+    border-radius: 4em;
+    border: 2px solid green;
+}
+
+/* button design */
+button.st-emotion-cache-7ym5gk.ef3psqc12 {
+    background-color: yellowgreen;
+}
+
+
+/* text input design */
+.st-b4.st-b9.st-c2.st-b2.st-bu.st-ae.st-af.st-ag.st-ah.st-ai.st-aj.st-c3.st-bz {
+    background-color: white;
 }

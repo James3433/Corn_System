@@ -7,7 +7,7 @@ from supabase_connect import get_white_corn_price, get_yellow_corn_price
 def app():
 
     # Load custom CSS
-    with open("style.css") as f:
+    with open("styles/style.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
     # Mapping full month names to three-letter abbreviations
@@ -17,10 +17,10 @@ def app():
 
     # Group the data by year based on the selected dataset
     if selected_dataset == 'White Corn Price':
-        corn_price = "White Corn Price"
+        corn_price = "White Corn"
         response_1, response_2, response_3, response_4, response_5 = get_white_corn_price()
     else:
-        corn_price = "Yellow Corn Price"
+        corn_price = "Yellow Corn"
         response_1, response_2, response_3, response_4, response_5 = get_yellow_corn_price()
 
     # Convert the responses to DataFrames

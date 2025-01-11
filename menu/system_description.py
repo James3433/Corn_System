@@ -19,7 +19,7 @@ def app():
         st.success("Select a page above.") 
 
     # Load custom CSS
-    with open("style.css") as f:
+    with open("styles/style.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
     st.markdown(f"""
