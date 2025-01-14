@@ -36,7 +36,7 @@ def app():
 
             # Parse the username into first name and last name
             try:
-                fname, lname = fname_lname.split(' ', 1) 
+                lname, fname = fname_lname.split(', ', 1) 
 
             except ValueError:
                 st.error("Please enter both First Name and Last Name separated by a space.")
