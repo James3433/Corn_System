@@ -4,6 +4,14 @@ import matplotlib.pyplot as plt
 import folium
 import geopandas as gpd
 
+
+import tkinter as tk
+from tkinter import ttk
+import folium
+import webbrowser
+import os
+
+
 from branca.colormap import linear
 from sklearn.model_selection import train_test_split
 from supabase_connect import get_white_davao_region_dataset, get_white_davao_de_oro_dataset, get_white_davao_del_norte_dataset, get_white_davao_del_sur_dataset, get_white_davao_oriental_dataset, get_white_davao_city_dataset
@@ -20,12 +28,19 @@ def app():
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
     st.markdown(f"""
-        <style>
+            <style>  
             [data-testid="stVerticalBlock"] {{
-                border-radius: 2em;
-                background-color: greenyellow;
-            }}
-        </style>
+                    border-radius: 2em;
+                    background-color: #8edd27;
+                }}
+
+                @media (max-width: 768px) {{
+                    section.main.st-emotion-cache-bm2z3a.ea3mdgi8 {{
+                        padding: 0px;
+                    }}
+                }}
+
+            </style>
     """, unsafe_allow_html=True)
 
     def heatmap(dataset, title):
@@ -93,8 +108,7 @@ def app():
         # Display the map in Streamlit
         with open('./map.html', 'r', encoding='utf-8') as f:
             html_data = f.read()
-            st.components.v1.html(html_data, width=500, height=650)
-
+            st.components.v1.html(html_data, width=500, height=600)
 
 # ===================================================================================================
 
@@ -172,7 +186,7 @@ def app():
             
             RERF_pred.append(final_prediction[0])  # Append the single prediction
         
-        return pd.Series(RERF_pred)  # Return as a Series or DataFrame if needed
+        return pd.Series([round(pred, 2) for pred in RERF_pred])  # Return as a Series or DataFrame if needed
 
 
 
@@ -542,11 +556,13 @@ def app():
 
         col1, col2 = st.columns((2))
         with col1:
+            st.header("White Corn")
             heatmap(w_farmgate_df,title_1)
             heatmap(w_retail_df,title_1)
             heatmap(w_wholesale_df,title_1)
 
         with col2:
+            st.header("Yellow Corn")
             heatmap(y_farmgate_df,title_2)
             heatmap(y_retail_df,title_2)
             heatmap(y_wholesale_df,title_2)

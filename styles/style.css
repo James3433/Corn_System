@@ -78,6 +78,12 @@ h1, h2, h3, h4, h5, p {
         background-size: 226%;
     }
 
+    /* Color Map */
+    .leaflet-control {
+        width: 200px; /* Adjust the width */
+        height: 300px; /* Adjust the height */
+    }
+
 }
 @media (min-width: 576px) {
     .st-emotion-cache-1jicfl2 {
@@ -87,11 +93,11 @@ h1, h2, h3, h4, h5, p {
 .info div {
     display: flex;
     flex-direction: row;
-    background-color: #a3f841;
+    background-color: #8edd27;
     width: 99%;
     padding: 20px;
     border-radius: 10px;
-    box-shadow: 4px 8px #dfff27;
+    box-shadow: 4px 8px #578809;
 }
 .info img {
     margin-right: 20px;
@@ -104,18 +110,22 @@ h1, h2, h3, h4, h5, p {
     width: 2.6em;
     padding: 3px 0px 0px 1px;
     line-height: 0;
-    background-color: #feff00;
+    background-color: #8edd27;
     border-radius: 4em;
     border: 2px solid green;
 }
 
 /* button design */
 button.st-emotion-cache-7ym5gk.ef3psqc12 {
-    background-color: yellowgreen;
+    background-color: #6db115;
 }
 
 
 /* text input design */
 .st-b4.st-b9.st-c2.st-b2.st-bu.st-ae.st-af.st-ag.st-ah.st-ai.st-aj.st-c3.st-bz {
     background-color: white;
+}
+
+[data-testid="stExpanderDetails"]{
+    padding: 0px;
 }

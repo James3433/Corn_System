@@ -11,7 +11,6 @@ from supabase_connect import get_yellow_davao_region_dataset, get_yellow_davao_d
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
-from datetime import datetime
 
 def app():
 
@@ -24,10 +23,16 @@ def app():
     st.markdown(f"""
             <style>
                 [data-testid="stVerticalBlock"] {{
-                    padding: 2em;
                     border-radius: 2em;
-                    background-color: greenyellow;
+                    background-color: #8edd27;
                 }}
+
+                @media (max-width: 768px) {{
+                    section.main.st-emotion-cache-bm2z3a.ea3mdgi8 {{
+                        padding: 0px;
+                    }}
+                }}
+
             </style>
     """, unsafe_allow_html=True)
 
@@ -174,7 +179,7 @@ def app():
             
             RERF_pred.append(final_prediction[0])  # Append the single prediction
         
-        return pd.Series(RERF_pred)  # Return as a Series or DataFrame if needed
+        return pd.Series([round(pred, 2) for pred in RERF_pred]) # Return as a Series or DataFrame if needed
 
 
 
@@ -533,9 +538,11 @@ def app():
         with st.form('Heatmaps'):
             col1, col2 = st.columns((2))
             with col1:
+                st.header("White Corn")
                 heatmap(white_filtered_data,title_1)
 
             with col2:
+                st.header("Yellow Corn")
                 heatmap(yellow_filtered_data,title_2)
 
 

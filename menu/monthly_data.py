@@ -19,7 +19,7 @@ def app():
                 [data-testid="stHorizontalBlock"] {{
                     padding: 2em;
                     border-radius: 2em;
-                    background-color: greenyellow;
+                    background-color: #8edd27;
                 }}
             </style>
     """, unsafe_allow_html=True)

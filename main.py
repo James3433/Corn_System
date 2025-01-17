@@ -1,5 +1,5 @@
 import streamlit as st
-from menu import home, monthly_data, manage_data, manage_predict_1, manage_predict_2, system_description, comments, signup, login, logout
+from menu import home, monthly_data, manage_data, manage_predict_1, manage_predict_2, comments, signup, login, logout
 from streamlit_option_menu import option_menu
 
 st.set_page_config(page_title='Corn.com', page_icon='images/corn_logo.png', layout='wide')
@@ -48,7 +48,7 @@ class MultiApp:
                 nonlocal app
                 app = option_menu(
                     menu_title='Main Menu',
-                    options=['About', 'Comments', 'Monthly Data', 'Predict Price', 'Logout'],
+                    options=['Comments', 'Monthly Data', 'Predict Price', 'Logout'],
                     menu_icon='caht-text-fill',
                     default_index=0,
                     styles={
@@ -82,7 +82,7 @@ class MultiApp:
                 nonlocal app
                 app = option_menu(
                     menu_title='Main Menu',
-                    options=['About', 'Comments', 'Monthly Data', 'Manage Predict', 'Manage Data', 'Logout'],
+                    options=['Comments', 'Monthly Data', 'Manage Predict', 'Manage Data', 'Logout'],
                     menu_icon='caht-text-fill',
                     default_index=0,
                     styles={
@@ -141,8 +141,6 @@ class MultiApp:
                 
 
 
-        if app == 'About':
-            system_description.app()
         if app == 'Comments':
             comments.app()
         if app == 'Monthly Data':

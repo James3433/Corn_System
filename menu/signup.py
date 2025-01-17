@@ -27,7 +27,7 @@ def app():
     st.markdown(f"""
             <style>
                 [data-testid="stVerticalBlockBorderWrapper"] {{
-                    background-color: #a3f841;
+                    background-color: #8edd27;
                     width: 100%;
                     height: 110%; 
                     border-radius: 10px;
