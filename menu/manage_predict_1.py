@@ -102,6 +102,7 @@ def app():
         with open('./map.html', 'r', encoding='utf-8') as f:
             html_data = f.read()
             st.components.v1.html(html_data, width=500, height=650)
+            
 
 # ===================================================================================================
 
