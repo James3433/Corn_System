@@ -4,14 +4,6 @@ import matplotlib.pyplot as plt
 import folium
 import geopandas as gpd
 
-
-import tkinter as tk
-from tkinter import ttk
-import folium
-import webbrowser
-import os
-
-
 from branca.colormap import linear
 from sklearn.model_selection import train_test_split
 from supabase_connect import get_white_davao_region_dataset, get_white_davao_de_oro_dataset, get_white_davao_del_norte_dataset, get_white_davao_del_sur_dataset, get_white_davao_oriental_dataset, get_white_davao_city_dataset
@@ -19,7 +11,6 @@ from supabase_connect import get_yellow_davao_region_dataset, get_yellow_davao_d
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
-from datetime import datetime
 
 def app():
 
