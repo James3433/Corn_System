@@ -571,14 +571,20 @@ def app():
         col1, col2 = st.columns((2))
         with col1:
             st.header("White Corn")
+            st.header("Farmgate Price")
             heatmap(w_farmgate_df,title_1)
+            st.header("Retail Price")
             heatmap(w_retail_df,title_1)
+            st.header("Wholesale Price")
             heatmap(w_wholesale_df,title_1)
 
         with col2:
             st.header("Yellow Corn")
+            st.header("Farmgate Price")
             heatmap(y_farmgate_df,title_2)
+            st.header("Retail Price")
             heatmap(y_retail_df,title_2)
+            st.header("Wholesale Price")
             heatmap(y_wholesale_df,title_2)
 
 
