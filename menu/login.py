@@ -26,7 +26,7 @@ def app():
 
     with st.container():
         st.header(" Login Account ")
-        fname_lname = st.text_input(label="Username", placeholder="Enter your First Name, space and then Last Name", key="fname_input")
+        fname_lname = st.text_input(label="Username", placeholder="(Last Name)+','+(space)+(First Name)", key="fname_input")
         password = st.text_input(label="Password", type="password", placeholder="Password",  key="password_input")
         
         if st.button('Login'):
