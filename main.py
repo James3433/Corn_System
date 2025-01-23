@@ -82,7 +82,7 @@ class MultiApp:
                 nonlocal app
                 app = option_menu(
                     menu_title='Main Menu',
-                    options=['Comments', 'Monthly Data', 'Manage Predict', 'Manage Data', 'Logout'],
+                    options=['Comments', 'Monthly Data', 'Predict Price', 'Manage Data', 'Logout'],
                     menu_icon='caht-text-fill',
                     default_index=0,
                     styles={
@@ -132,8 +132,10 @@ class MultiApp:
 
             if st.session_state['logged_in'] and st.session_state['user_type'] != 4:
                 show_main_menu_for_user()
+
             elif st.session_state['logged_in'] and st.session_state['user_type'] == 4:
                 show_main_menu_for_admin()
+
             elif st.session_state['logged_out']:
                 show_login_and_logout()
             else:
@@ -145,10 +147,12 @@ class MultiApp:
             comments.app()
         if app == 'Monthly Data':
             monthly_data.app()
-        if app == 'Predict Price':
+
+        if app == 'Predict Price' and st.session_state['user_type'] != 4:
             manage_predict_1.app()
-        if app == 'Manage Predict':
+        if app == 'Predict Price' and st.session_state['user_type'] == 4:
             manage_predict_2.app()
+
         if app == 'Manage Data':
             manage_data.app()
         if app == 'Home':

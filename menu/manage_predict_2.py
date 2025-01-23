@@ -32,16 +32,24 @@ def app():
                     background-color: #8edd27;
                 }}
 
+                [data-testid="stHorizontalBlock"] {{
+                    margin: 0em 2em;
+                }}
+
                 [data-testid="stMarkdown"] {{
-                        margin-top: -35em;
-                        margin-left: 20em;
+                    margin-top: -35em;
+                    margin-left: 20em;
                 }}
 
                 @media (max-width: 768px) {{
-                    section.main.st-emotion-cache-bm2z3a.ea3mdgi8 {{
+                    .section.main.st-emotion-cache-bm2z3a.ea3mdgi8 {{
                         padding: 0px;
                     }}
-                
+
+                    [data-testid="stHorizontalBlock"] {{
+                        margin: 0em;
+                    }}
+            
                 }}
 
             </style>
