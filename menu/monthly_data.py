@@ -21,6 +21,11 @@ def app():
                     border-radius: 2em;
                     background-color: #8edd27;
                 }}
+                @media (max-width: 768px) {{
+                    [data-testid="stHorizontalBlock"] {{
+                        padding: 1em 0em 1em 1em;
+                }}
+                }}
             </style>
     """, unsafe_allow_html=True)
 

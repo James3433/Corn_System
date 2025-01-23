@@ -1,8 +1,10 @@
+import base64
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import folium
 import geopandas as gpd
+
 
 from branca.colormap import linear
 from sklearn.model_selection import train_test_split
@@ -13,29 +15,39 @@ from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
 
 def app():
+    @st.cache_data
+    def get_img_as_base64(file):
+        with open (file, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
 
     # Load custom CSS
     with open("styles/style.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
     st.markdown(f"""
-            <style>  
-            [data-testid="stVerticalBlock"] {{
+            <style>
+                [data-testid="stVerticalBlock"] {{
                     border-radius: 2em;
                     background-color: #8edd27;
+                }}
+
+                [data-testid="stMarkdown"] {{
+                        margin-top: -35em;
+                        margin-left: 20em;
                 }}
 
                 @media (max-width: 768px) {{
                     section.main.st-emotion-cache-bm2z3a.ea3mdgi8 {{
                         padding: 0px;
                     }}
+                
                 }}
 
             </style>
     """, unsafe_allow_html=True)
 
     def heatmap(dataset, title):
-
         # Rename columns that contain "_price" to "price"
         dataset.rename(columns=lambda x: 'price' if '_price' in x else x, inplace=True)
 
@@ -54,32 +66,16 @@ def app():
                         tiles="cartodbpositron")
 
         # Create a linear colormap
-        colormap = linear.YlOrRd_09.scale(
-            dataset['price'].min(), 
-            dataset['price'].max()
-        )
+        cmap = plt.get_cmap('YlOrRd')
 
-        colormap.caption = f'{title} in Davao Region'
+        # Normalize the price values
+        norm = plt.Normalize(vmin=dataset['price'].min(), vmax=dataset['price'].max())
 
-        # Create the choropleth layer
-        choropleth = folium.Choropleth(
-            geo_data=geo_data,
-            data=dataset,
-            columns=['province', 'price'],
-            key_on='feature.properties.name',
-            fill_color='YlOrRd',  # Using the color scale for yellow to red
-            fill_opacity=0.7,
-            line_opacity=0.2,
-            highlight=True,
-            nan_fill_color='white',  # Color for missing values
-            legend_name= f'{title} in Davao Region'
-        ).add_to(map)
-
-        # Add tooltips
+        # Create the choropleth layer without a built-in colorbar
         folium.GeoJson(
             geo_data,
             style_function=lambda feature: {
-                'fillColor': colormap(feature['properties']['price'])
+                'fillColor': '#{:02x}{:02x}{:02x}'.format(*[int(x * 255) for x in cmap(norm(feature['properties']['price']))])
                 if feature['properties']['price'] is not None
                 else 'white',
                 'color': 'black',
@@ -88,7 +84,7 @@ def app():
             },
             tooltip=folium.GeoJsonTooltip(
                 fields=['name', 'price'],
-                aliases=['Province: ', 'Predited Price: '],
+                aliases=['Province: ', 'Predicted Price: '],
                 localize=True
             )
         ).add_to(map)
@@ -96,10 +92,28 @@ def app():
         # Save the map as an HTML file
         map.save('./map.html')
 
-        # Display the map in Streamlit
+        # Create a vertical colormap image
+        fig, ax = plt.subplots(figsize=(0.5, 8))
+        fig.subplots_adjust(left=0.5)
+        cb = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), 
+                        cax=ax, orientation='vertical')
+        cb.set_label(f'{title} in Davao Region')
+        plt.savefig('colorbar.png', bbox_inches='tight', dpi=100)
+
+        # Display the map and colorbar in Streamlit
+
+        img_1 = get_img_as_base64("colorbar.png")
+
         with open('./map.html', 'r', encoding='utf-8') as f:
             html_data = f.read()
-            st.components.v1.html(html_data, width=500, height=600)
+            st.components.v1.html(html_data, width=380, height=540)
+
+        st.markdown(f"""
+                    
+            <img src="data:image/png;base64,{img_1}" alt="A beautiful landscape" width="70px" height="450px">
+            
+    """, unsafe_allow_html=True)
+
 
 
 # ===================================================================================================

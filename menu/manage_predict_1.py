@@ -1,3 +1,4 @@
+import base64
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
@@ -14,6 +15,13 @@ from sklearn.linear_model import Lasso
 
 def app():
 
+    @st.cache_data
+    def get_img_as_base64(file):
+        with open (file, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    
+
     user_type = st.session_state.get('user_type', '0')
 
     # Load custom CSS
@@ -27,17 +35,22 @@ def app():
                     background-color: #8edd27;
                 }}
 
+                [data-testid="stMarkdown"] {{
+                        margin-top: -35em;
+                        margin-left: 20em;
+                }}
+
                 @media (max-width: 768px) {{
                     section.main.st-emotion-cache-bm2z3a.ea3mdgi8 {{
                         padding: 0px;
                     }}
+            
                 }}
 
             </style>
     """, unsafe_allow_html=True)
 
     def heatmap(dataset, title):
-
         # Rename columns that contain "_price" to "price"
         dataset.rename(columns=lambda x: 'price' if '_price' in x else x, inplace=True)
 
@@ -56,32 +69,16 @@ def app():
                         tiles="cartodbpositron")
 
         # Create a linear colormap
-        colormap = linear.YlOrRd_09.scale(
-            dataset['price'].min(), 
-            dataset['price'].max()
-        )
+        cmap = plt.get_cmap('YlOrRd')
 
-        colormap.caption = f'{title} in Davao Region'
+        # Normalize the price values
+        norm = plt.Normalize(vmin=dataset['price'].min(), vmax=dataset['price'].max())
 
-        # Create the choropleth layer
-        choropleth = folium.Choropleth(
-            geo_data=geo_data,
-            data=dataset,
-            columns=['province', 'price'],
-            key_on='feature.properties.name',
-            fill_color='YlOrRd',  # Using the color scale for yellow to red
-            fill_opacity=0.7,
-            line_opacity=0.2,
-            highlight=True,
-            nan_fill_color='white',  # Color for missing values
-            legend_name= f'{title} in Davao Region'
-        ).add_to(map)
-
-        # Add tooltips
+        # Create the choropleth layer without a built-in colorbar
         folium.GeoJson(
             geo_data,
             style_function=lambda feature: {
-                'fillColor': colormap(feature['properties']['price'])
+                'fillColor': '#{:02x}{:02x}{:02x}'.format(*[int(x * 255) for x in cmap(norm(feature['properties']['price']))])
                 if feature['properties']['price'] is not None
                 else 'white',
                 'color': 'black',
@@ -90,7 +87,7 @@ def app():
             },
             tooltip=folium.GeoJsonTooltip(
                 fields=['name', 'price'],
-                aliases=['Province: ', 'Predited Price: '],
+                aliases=['Province: ', 'Predicted Price: '],
                 localize=True
             )
         ).add_to(map)
@@ -98,11 +95,28 @@ def app():
         # Save the map as an HTML file
         map.save('./map.html')
 
-        # Display the map in Streamlit
+        # Create a vertical colormap image
+        fig, ax = plt.subplots(figsize=(0.5, 8))
+        fig.subplots_adjust(left=0.5)
+        cb = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), 
+                        cax=ax, orientation='vertical')
+        cb.set_label(f'{title} in Davao Region')
+        plt.savefig('colorbar.png', bbox_inches='tight', dpi=100)
+
+
+        # Display the map and colorbar in Streamlit
+        img_1 = get_img_as_base64("colorbar.png")
+
         with open('./map.html', 'r', encoding='utf-8') as f:
             html_data = f.read()
-            st.components.v1.html(html_data, width=500, height=650)
+            st.components.v1.html(html_data, width=380, height=540)
+
+        st.markdown(f"""
+                    
+            <img src="data:image/png;base64,{img_1}" alt="A beautiful landscape" width="70px" height="450px">
             
+    """, unsafe_allow_html=True)
+
 
 # ===================================================================================================
 
@@ -337,11 +351,11 @@ def app():
             dataset = merge_dataset(response_1, response_2, response_3, response_4)
             
             # Predict dataset using the parameters
-            predict_df = predict_dataset(dataset,
+            predict_df, price_type = predict_dataset(dataset,
                                         f_star[0], f_star[1], f_star[2], 
                                         r_star[0], r_star[1], r_star[2], 
                                         w_star[0], w_star[1], w_star[2])
-            
+
             # Add province_id to predict_df
             predict_df['province_id'] = province_id
 
@@ -350,18 +364,14 @@ def app():
 
             if selected_dataset == 'Graph Plots':
                 # Manage plotting for the current province
-                manage_plot(predict_df, province_name)
+                manage_plot(predict_df, province_name, price_type)
 
         if selected_dataset == 'Heatmap':
 
-            return predictions_df
+            return predictions_df, price_type
 
 
 
-    province = ""
-    f_star = [0] * 3  # Initialize with zeros or appropriate values
-    r_star = [0] * 3
-    w_star = [0] * 3 
 
     # white corn province configurations
     province_configs_1 = {
@@ -460,12 +470,11 @@ def app():
 
 
     if selected_dataset == 'Graph Plots':
-        with st.form('Graph Plots'):
-            with st.expander("White Predictions Plots"):
-                prediction_dataset(province_configs_1, selected_dataset)
-            
-            with st.expander("Yellow Predictions Plots"):
-                prediction_dataset(province_configs_2, selected_dataset)
+        with st.expander("White Predictions Plots"):
+            prediction_dataset(province_configs_1, selected_dataset)
+        
+        with st.expander("Yellow Predictions Plots"):
+            prediction_dataset(province_configs_2, selected_dataset)
 
 
 
@@ -480,8 +489,8 @@ def app():
         province_list = ['Davao Region', 'Davao de Oro', 'Davao del Norte', 'Davao del Sur', 'Davao Oriental', 'Davao City']
 
 
-        white_prediction_df = prediction_dataset(province_configs_1, selected_dataset)
-        yellow_prediction_df = prediction_dataset(province_configs_2, selected_dataset)
+        white_prediction_df, price_type = prediction_dataset(province_configs_1, selected_dataset)
+        yellow_prediction_df, price_type = prediction_dataset(province_configs_2, selected_dataset)
         
 
         # Reverse the dictionary
@@ -536,14 +545,13 @@ def app():
         title_2 = "Yellow Corn Price"
 
 
-        with st.form('Heatmaps'):
-            col1, col2 = st.columns((2))
-            with col1:
-                st.header("White Corn")
-                heatmap(white_filtered_data,title_1)
+        col1, col2 = st.columns((2))
+        with col1:
+            st.header("White Corn")
+            heatmap(white_filtered_data,title_1)
 
-            with col2:
-                st.header("Yellow Corn")
-                heatmap(yellow_filtered_data,title_2)
+        with col2:
+            st.header("Yellow Corn")
+            heatmap(yellow_filtered_data,title_2)
 
 
