@@ -132,12 +132,16 @@ def app():
 
 
     # Use a unique key for the form by incrementing it each time the form is submitted.
-    form_key = st.session_state.get('form_key', 0)
+    if "form_key" not in st.session_state:
+        st.session_state.form_key = 0
 
 
     # Initialize session state for current province index if not already done
     if "current_prov_index" not in st.session_state:
         st.session_state.current_prov_index = 0
+
+
+    form_key = st.session_state.get('form_key')
 
 
     if st.session_state.current_prov_index <= len(provinces) - 1:
