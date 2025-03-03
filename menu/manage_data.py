@@ -1,9 +1,23 @@
 import pandas as pd
+import numpy as np
 import streamlit as st
+import joblib
 
 from supabase_connect import get_user_name, get_user_by_user_type
-from supabase_connect import get_white_corn_fertilizer_data, get_yellow_corn_fertilizer_data, get_white_corn_price_data, get_yellow_corn_price_data, get_white_corn_production_data, get_yellow_corn_production_data, get_white_corn_weather_data, get_yellow_corn_weather_data
+from supabase_connect import get_fertilizer_data, get_weather_data, get_white_corn_price_data, get_yellow_corn_price_data, get_white_corn_production_data, get_yellow_corn_production_data
 from supabase_connect import submit_predictions_fertilizer, submit_predictions_price, submit_predictions_production, submit_predictions_weather
+
+from supabase_connect import get_corn_production_dataset, get_fertilizer_dataset, get_weather_dataset, get_corn_price_dataset
+
+from supabase_connect import get_white_davao_region_dataset, get_white_davao_de_oro_dataset, get_white_davao_del_norte_dataset, get_white_davao_del_sur_dataset, get_white_davao_oriental_dataset, get_white_davao_city_dataset
+from supabase_connect import get_yellow_davao_region_dataset, get_yellow_davao_de_oro_dataset, get_yellow_davao_del_norte_dataset, get_yellow_davao_del_sur_dataset, get_yellow_davao_oriental_dataset, get_yellow_davao_city_dataset
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression, BayesianRidge
+from sklearn.linear_model import Lasso
+from sklearn.linear_model import LassoCV
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 def app():
 
@@ -21,18 +35,19 @@ def app():
     provinces = ['Davao Region', 'Davao de Oro', 'Davao del Norte', 'Davao del Sur', 'Davao Oriental', 'Davao City']
     provinces_num = {'Davao Region': 1, 'Davao de Oro': 2, 'Davao del Norte': 3, 'Davao del Sur': 4, 'Davao Oriental': 5, 'Davao City': 6}
     conditions_num = {'Partly Cloudy': 1, 'Rain, Partially Cloudy': 2, 'Rain, Overcas': 2, 'Overcast': 4}
+    corn_type = {'White Corn': 1, 'Yellow Corn': 2}
 
 
 
-    fertilizer_database= pd.DataFrame(columns=["year", "month", "province_id", "ammophos_price", "ammosul_price", "complete_price", "urea_price"])
+    fertilizer_database= pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "ammophos_price", "ammosul_price", "complete_price", "urea_price"])
 
-    weather_database = pd.DataFrame(columns=["year", "month", "province_id","tempmax", "tempmin", "temp", "dew","humidity", "precip", "precipprob",
+    weather_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "tempmax", "tempmin", "temp", "dew","humidity", "precip", "precipprob",
                                             "precipcover", "windspeed", "sealevelpressure","visibility", "solarradiation", "uvindex","severerisk", 
                                             "cloudcover", "conditions"])
     
-    price_database = pd.DataFrame(columns=["year", "month", "province_id", "farmgate_corngrains_price", "retail_corngrits_price", "wholesale_corngrits_price"])
+    price_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "farmgate_corngrains_price", "retail_corngrits_price", "wholesale_corngrits_price"])
     
-    production_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_production"])
+    production_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "corn_production"])
 
 
 
@@ -53,80 +68,57 @@ def app():
         sealevelpressure, visibility, solarradiation, uvindex, severerisk, cloudcover, conditions = "", "", "", "", "", "", ""
 
 
-    def prevent_selection_change(selected_dataset2, previous_selection):
-        if selected_dataset2 != previous_selection:
-            if 'input_data' in st.session_state and not st.session_state.input_data.empty:
-                st.warning("Cannot switch selection. Please clear or submit existing data first.")
-                return previous_selection
-        return selected_dataset2
+
+    if "selected_dataset2_num" not in st.session_state:
+        st.session_state.selected_dataset2_num = 0
 
 
-
-    if "selected_dataset2_prev" not in st.session_state:
-        st.session_state.selected_dataset2_prev = 'Fertilizer Price'
-
-
-    selected_dataset1 = st.sidebar.selectbox("Choose an option:", ['White Corn Price', 'Yellow Corn Price'])
-    selected_dataset2 = st.selectbox("Choose an option:", ['Fertilizer Price', 'Cron Price', 'Corn Production', 'Weather Info'])
+    
+    dataset2 = ['Corn Production', 'Fertilizer Price', 'Weather Info', 'Corn Price', 'Train Data']
 
 
-    selected_dataset2 = prevent_selection_change(selected_dataset2, st.session_state.selected_dataset2_prev)
+    selected_dataset2 = dataset2[st.session_state.selected_dataset2_num]
 
     # Update previous selection
     st.session_state.selected_dataset2_prev = selected_dataset2
 
 
 
-    # Group the data by year based on the selected dataset
-    if selected_dataset1 == 'White Corn Price':
+    
+    if selected_dataset2 == "Fertilizer Price":
+        response_1 = get_fertilizer_data()
+        
+    elif selected_dataset2 == "Corn Price":
+        response_1 = get_white_corn_price_data()
+        response_2 = get_yellow_corn_price_data()      
+    
+    elif selected_dataset2 == "Corn Production":
+        response_1 = get_white_corn_production_data()
+        response_2 = get_yellow_corn_production_data()
+        
+    elif selected_dataset2 == "Weather Info":
+        response_1 = get_weather_data()
 
-        corn_type = "White Corn"
-        if selected_dataset2 == "Fertilizer Price":
-            response = get_white_corn_fertilizer_data()
             
-        elif selected_dataset2 == "Cron Price":
-            response = get_white_corn_price_data()         
+
+
+    if 'input_data' not in st.session_state:
+        st.session_state.input_data = pd.DataFrame()  # or some default DataFrame
+
+        if selected_dataset2 == "Fertilizer Price":
+            st.session_state.input_data = fertilizer_database
+
+        elif selected_dataset2 == "Corn Price":
+            st.session_state.input_data = price_database
 
         elif selected_dataset2 == "Corn Production":
-            response = get_white_corn_production_data()
+            st.session_state.input_data = production_database
             
         elif selected_dataset2 == "Weather Info":
-            response = get_white_corn_weather_data()
-            
+            st.session_state.input_data = weather_database
 
-    else:
-
-        corn_type = "Yellow Corn"
-        if selected_dataset2 == "Fertilizer Price":
-            response = get_yellow_corn_fertilizer_data()
-            
-        elif selected_dataset2 == "Cron Price":
-            response = get_yellow_corn_price_data()         
-
-        elif selected_dataset2 == "Corn Production":
-            response = get_yellow_corn_production_data()        
-            
-        elif selected_dataset2 == "Weather Info":
-            response = get_yellow_corn_weather_data()
-            
 
             
-    dataset = pd.DataFrame(response)
-
-    # Drop id and province_id
-    dataset = dataset.drop(columns=["id"], axis=1)
-
-    # # Apply fetch_full_name to the 'user_id' column
-    # dataset['user_id'] = dataset['user_id'].apply(fetch_full_name)
-
-    # Get the current year and month
-    last_year = dataset['year'].iloc[-1]
-    current_year = last_year
-    # Get the last row of the 'month' column
-    last_month = dataset['month'].iloc[-1]
-    current_month = last_month + 1
-
-
     # The get_users_by_user_type function now returns all users with the specified user_type instead of just the first one.
     usernames = get_user_by_user_type(4)
 
@@ -150,20 +142,6 @@ def app():
         current_prov = provinces[5]
 
 
-    if 'input_data' not in st.session_state:
-        st.session_state.input_data = pd.DataFrame()  # or some default DataFrame
-        if selected_dataset2 == "Fertilizer Price":
-            st.session_state.input_data = fertilizer_database
-        
-        elif selected_dataset2 == "Cron Price":
-            st.session_state.input_data = price_database
-        
-        elif selected_dataset2 == "Corn Production":
-            st.session_state.input_data = production_database
-            
-        elif selected_dataset2 == "Weather Info":
-            st.session_state.input_data = weather_database
-
 
     if usernames:
         usernames = usernames
@@ -171,208 +149,751 @@ def app():
         usernames = "No users found with user_type = 4."
 
 
-    col1, col2 = st.columns((1.5, 1.5))
 
-    with col1:
-        st.header(f"{selected_dataset1} {selected_dataset2}")
-        st.dataframe(dataset)
-        # st.write("Province = 'Davao Region': 1, 'Davao de Oro': 2, 'Davao del Norte': 3, 'Davao del Sur': 4, 'Davao Oriental': 5, 'Davao City': 6")
-        
-        st.markdown(f"""
-        <div style="background-color: #a3f841; padding: 10px; border-radius: 20px;">
-            <h6> Province = 'Davao Region': 1, 'Davao de Oro': 2, 'Davao del Norte': 3, 'Davao del Sur': 4, 'Davao Oriental': 5, 'Davao City': 6 </h6>
-            <h6> User Admin = {usernames} </h6>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col2: 
-        # Create a form for data entry for the current province
-        with st.form(key=f'data_entry_form_{form_key}'):
-            st.header(f"Data Entry for {current_prov}")
-            
-            col4, col5 = st.columns(2)
-
-            with col4:
-                Month = st.text_input(label="Month", placeholder=f"{current_month}", key=f"month_input", disabled=True)
-
-                # Check if Month input is valid and adjust Year accordingly
-                if current_month < last_month:
-                    current_year = int(last_year) + 1  # Increment year by 1 if Month is less than last_month
-
-            with col5:
-                Year = st.text_input(label="Year", placeholder=f"{current_year}", key=f"year_input", disabled=True)
+    if selected_dataset2 != "Train Data":
 
 
-            if selected_dataset2 == "Fertilizer Price":
+        dataset = pd.DataFrame(response_1)
 
-                col_1, col_2, col_3, col_4 = st.columns(4)
-                with col_1:
-                    Ammophos = st.text_input(label="Ammophos Price", placeholder="Ammophos Price", key=f"amp_price_input")
-                with col_2:
-                    Ammosul = st.text_input(label="Ammosul Price", placeholder="Ammosul Price", key=f"ams_price_input")
-                with col_3:
-                    Complete = st.text_input(label="Complete Price", placeholder="Complete Price", key=f"com_price_input")
-                with col_4:
-                    Urea = st.text_input(label="Urea Price", placeholder="Urea Price", key=f"urea_price_input")
+        # Drop id and province_id
+        dataset = dataset.drop(columns=["id"], axis=1)
 
+        # # Apply fetch_full_name to the 'user_id' column
+        # dataset['user_id'] = dataset['user_id'].apply(fetch_full_name)
 
-            elif selected_dataset2 == "Cron Price":
-
-                col_1, col_2, col_3 = st.columns(3)
-                with col_1:
-                    Farmgate_Price = st.text_input(label="Farmgate Price", placeholder="Farmgate Price", key=f"f_price_input")
-                with col_2:
-                    Retail_Price = st.text_input(label="Retail Price", placeholder="Retail Price", key=f"r_price_input")
-                with col_3:
-                    Wholesale_Price = st.text_input(label="Wholesale Price", placeholder="Wholesale Price", key=f"w_price_input")
-
-            elif selected_dataset2 == "Corn Production":
-                Production = st.text_input(label="Production", placeholder="Production", key=f"production_input")
-
-            elif selected_dataset2 == "Weather Info":
-
-                col_1, col_2, col_3 = st.columns(3)
-                
-                with col_1:
-                    temp_min = st.text_input(label="Temperature/Max", placeholder="Temperature/Max", key=f"t_min_input")
-                    temp_max = st.text_input(label="Temperature/Max", placeholder="Temperature/Max", key=f"t_max_input")
-                    temp = st.text_input(label="Temperature", placeholder="Temperature", key=f"t_input")
-                    dew = st.text_input(label="Dew", placeholder="Ammophos Price", key=f"dew_input")
-                    humidity = st.text_input(label="Humidity", placeholder="Ammophos Price", key=f"hum_input")
-                    
-                with col_2:
-                    precip = st.text_input(label="Precipitation", placeholder="Precipitation", key=f"precip_input")
-                    precipprob = st.text_input(label="Precipitation Probability", placeholder="Precipitation Probability", key=f"preciprob_input")
-                    precipcover = st.text_input(label="Precipitation Cover", placeholder="Precipitation Cover", key=f"precov_input")
-                    windspeed = st.text_input(label="wind Speed", placeholder="Ammosul Price", key=f"wind_input")
-                    sealevelpressure = st.text_input(label="Sea Level Pressure", placeholder="Sea Level Pressure", key=f"sea_input")
-                
-                with col_3:
-                    visibility = st.text_input(label="Visibility", placeholder="Visibility", key=f"vis_price_input")
-                    solarradiation = st.text_input(label="Solar Radiation", placeholder="Solar Radiation", key=f"solar_price_input")
-                    uvindex = st.text_input(label="Ultraviolet Index", placeholder="Ultraviolet Index", key=f"uv_price_input")
-                    severerisk = st.text_input(label="Severe Risk", placeholder="Severe Risk", key=f"sr_price_input")
-                    cloudcover = st.text_input(label="Clould Cover", placeholder="Clould Cover", key=f"cloud_price_input")
-
-                conditions = st.selectbox("Condiions:", ['Partly Cloudy', 'Rain, Partially Cloudy', 'Rain, Overcast', 'Overcast'])
+        # Get the current year and month
+        last_year = dataset['year'].iloc[-1]
+        current_year = last_year
+        # Get the last row of the 'month' column
+        last_month = dataset['month'].iloc[-1]
+        current_month = last_month + 1
 
 
-            if st.session_state.current_prov_index <= len(provinces) - 1:
-                if st.form_submit_button(f'Submit for {current_prov}'):
+        col1, col2 = st.columns((1.5, 1.5))
 
-                    if selected_dataset2 == "Fertilizer Price":
-                        fields = [Ammophos, Ammosul, Complete, Urea]
-                        field_names = ["ammophos_price", "ammosul_price", "complete_price", "urea_price"]
-                        if not all(fields):
-                            st.error("Please fill in all fields.")
-                            return
-                        
-                        new_data = {
-                            "month": current_month,
-                            "year": current_year,
-                            "province_id": current_prov,
-                            **dict(zip(field_names, fields))
-                        }
+        with col1:
+            st.header(f"{selected_dataset2}")
+            if selected_dataset2 == "Corn Production" or selected_dataset2 == "Corn Price":
+                dataset_1 = pd.DataFrame(response_1)
+                dataset_2 = pd.DataFrame(response_2)
 
-                    elif selected_dataset2 == "Cron Price":
-                        fields = [Farmgate_Price, Retail_Price, Wholesale_Price]
-                        field_names = ["farmgate_corngrains_price", "retail_corngrits_price", "wholesale_corngrits_price"]
-                        if not all(fields):
-                            st.error("Please fill in all fields.")
-                            return
-                        new_data = {
-                            "month": current_month,
-                            "year": current_year,
-                            "province_id": current_prov,
-                            **dict(zip(field_names, fields))
-                        }
-                        
-                    elif selected_dataset2 == "Corn Production":
-                        if not Production:
-                            st.error("Please fill in all fields.")
-                            return
-                        new_data = {
-                            "month": current_month,
-                            "year": current_year,
-                            "province_id": current_prov,
-                            "corn_production": Production
-                        }
-
-                    elif selected_dataset2 == "Weather Info":
-                        fields = [temp_max, temp_min, temp, dew, humidity, precip, precipprob, precipcover, windspeed, sealevelpressure, visibility, solarradiation, uvindex, severerisk, cloudcover]
-                        field_names = ["tempmax", "tempmin", "temp", "dew", "humidity", "precip", "precipprob", "precipcover", "windspeed", "sealevelpressure", "visibility", "solarradiation", "uvindex", "severerisk", "cloudcover"]
-                        if not all(fields):
-                            st.error("Please fill in all fields.")
-                            return
-                        new_data = {
-                            "month": current_month,
-                            "year": current_year,
-                            "province_id": current_prov,
-                            **dict(zip(field_names, fields)),
-                            "conditions": conditions.map(conditions_num)
-                        }
-
-                    new_row_df = pd.DataFrame([new_data])
-                    st.session_state.input_data = pd.concat([st.session_state.input_data, new_row_df], ignore_index=True)
-
-                    # Clear text inputs
-                    clear_text_input()
-
-                    st.session_state.form_key += 1
-                    st.session_state.current_prov_index += 1
-                    st.success(f"Data for {current_prov} added successfully!")
-                    st.rerun()  # Rerun to reflect changes
-
+                select_database = st.selectbox("Choose an corn type:", ['White Corn', 'Yellow Corn'])
+                if select_database == "White Corn":
+                    st.dataframe(dataset_1)
+                elif select_database == "Yellow Corn":  
+                    st.dataframe(dataset_2)
             else:
+                dataset_1 = pd.DataFrame(response_1)
+                st.dataframe(dataset_1)
+            # st.write("Province = 'Davao Region': 1, 'Davao de Oro': 2, 'Davao del Norte': 3, 'Davao del Sur': 4, 'Davao Oriental': 5, 'Davao City': 6")
+            
+            st.markdown(f"""
+            <div style="background-color: #a3f841; padding: 10px; border-radius: 20px;">
+                <h6> Province = 'Davao Region': 1, 'Davao de Oro': 2, 'Davao del Norte': 3, 'Davao del Sur': 4, 'Davao Oriental': 5, 'Davao City': 6 </h6>
+                <h6> User Admin = {usernames} </h6>
+            </div>
+            """, unsafe_allow_html=True)
 
-                if st.form_submit_button(f'Submit to the database'):
-                    
-                    st.session_state.input_data['province_id'] = st.session_state.input_data['province_id'].map(provinces_num)
+        with col2: 
+            # Create a form for data entry for the current province
+            with st.form(key=f'data_entry_form_{form_key}'):
+                st.header(f"Data Entry for {current_prov}")
+                
+                col4, col5 = st.columns(2)
 
-                    if selected_dataset2 == "Fertilizer Price":
-                        submit_predictions_fertilizer(st.session_state.input_data, user_id, corn_type)
-                        st.session_state.input_data = fertilizer_database
+                with col4:
+                    Month = st.text_input(label="Month", placeholder=f"{current_month}", key=f"month_input", disabled=True)
+
+                    # Check if Month input is valid and adjust Year accordingly
+                    if current_month < last_month:
+                        current_year = int(last_year) + 1  # Increment year by 1 if Month is less than last_month
+
+                with col5:
+                    Year = st.text_input(label="Year", placeholder=f"{current_year}", key=f"year_input", disabled=True)
+
+
+                if selected_dataset2 == "Fertilizer Price":
+
+                    col_1, col_2, col_3, col_4 = st.columns(4)
+                    with col_1:
+                        Ammophos = st.text_input(label="Ammophos Price", placeholder="Ammophos Price", key=f"amp_price_input")
+                    with col_2:
+                        Ammosul = st.text_input(label="Ammosul Price", placeholder="Ammosul Price", key=f"ams_price_input")
+                    with col_3:
+                        Complete = st.text_input(label="Complete Price", placeholder="Complete Price", key=f"com_price_input")
+                    with col_4:
+                        Urea = st.text_input(label="Urea Price", placeholder="Urea Price", key=f"urea_price_input")
+
+
+                elif selected_dataset2 == "Corn Price":
+                    st.write("White Corn")
+                    col_1, col_2, col_3 = st.columns(3)
+                    with col_1:
+                        W_Farmgate_Price = st.text_input(label="Farmgate Price", placeholder="Farmgate Price", key=f"f_price_input1")
+                    with col_2:
+                        W_Retail_Price = st.text_input(label="Retail Price", placeholder="Retail Price", key=f"r_price_input1")
+                    with col_3:
+                        W_Wholesale_Price = st.text_input(label="Wholesale Price", placeholder="Wholesale Price", key=f"w_price_input1")
+
+                    st.write("Yellow Corn")
+                    col_4, col_5, col_6 = st.columns(3)
+                    with col_4:
+                        Y_Farmgate_Price = st.text_input(label="Farmgate Price", placeholder="Farmgate Price", key=f"f_price_input2")
+                    with col_5:
+                        Y_Retail_Price = st.text_input(label="Retail Price", placeholder="Retail Price", key=f"r_price_input2")
+                    with col_6:
+                        Y_Wholesale_Price = st.text_input(label="Wholesale Price", placeholder="Wholesale Price", key=f"w_price_input2")
+
+
+                elif selected_dataset2 == "Corn Production":
+                    st.write("White Corn")
+                    W_Production = st.text_input(label="Production", placeholder="Production", key=f"production_input1")
+
+                    st.write("Yellow Corn")
+                    Y_Production = st.text_input(label="Production", placeholder="Production", key=f"production_input2")
+
+
+
+                elif selected_dataset2 == "Weather Info":
+
+                    col_1, col_2, col_3 = st.columns(3)
                     
-                    elif selected_dataset2 == "Cron Price":
-                        submit_predictions_price(st.session_state.input_data, user_id, corn_type)
-                        st.session_state.input_data = price_database
-                    
-                    elif selected_dataset2 == "Corn Production":
-                        submit_predictions_production(st.session_state.input_data, user_id, corn_type)
-                        st.session_state.input_data = production_database
+                    with col_1:
+                        temp_min = st.text_input(label="Temperature/Max", placeholder="Temperature/Max", key=f"t_min_input")
+                        temp_max = st.text_input(label="Temperature/Max", placeholder="Temperature/Max", key=f"t_max_input")
+                        temp = st.text_input(label="Temperature", placeholder="Temperature", key=f"t_input")
+                        dew = st.text_input(label="Dew", placeholder="Ammophos Price", key=f"dew_input")
+                        humidity = st.text_input(label="Humidity", placeholder="Ammophos Price", key=f"hum_input")
                         
-                    elif selected_dataset2 == "Weather Info":
-                        submit_predictions_weather(st.session_state.input_data, user_id, corn_type)
-                        st.session_state.input_data = weather_database
+                    with col_2:
+                        precip = st.text_input(label="Precipitation", placeholder="Precipitation", key=f"precip_input")
+                        precipprob = st.text_input(label="Precipitation Probability", placeholder="Precipitation Probability", key=f"preciprob_input")
+                        precipcover = st.text_input(label="Precipitation Cover", placeholder="Precipitation Cover", key=f"precov_input")
+                        windspeed = st.text_input(label="wind Speed", placeholder="Ammosul Price", key=f"wind_input")
+                        sealevelpressure = st.text_input(label="Sea Level Pressure", placeholder="Sea Level Pressure", key=f"sea_input")
+                    
+                    with col_3:
+                        visibility = st.text_input(label="Visibility", placeholder="Visibility", key=f"vis_price_input")
+                        solarradiation = st.text_input(label="Solar Radiation", placeholder="Solar Radiation", key=f"solar_price_input")
+                        uvindex = st.text_input(label="Ultraviolet Index", placeholder="Ultraviolet Index", key=f"uv_price_input")
+                        severerisk = st.text_input(label="Severe Risk", placeholder="Severe Risk", key=f"sr_price_input")
+                        cloudcover = st.text_input(label="Clould Cover", placeholder="Clould Cover", key=f"cloud_price_input")
 
-                    st.session_state.current_prov_index = 0
+                    conditions = st.selectbox("Condiions:", ['Partly Cloudy', 'Rain, Partially Cloudy', 'Rain, Overcast', 'Overcast'])
 
-                    # Clear text inputs
-                    clear_text_input()
 
-                    st.rerun() # Rerun to reflect changes
+                if st.session_state.current_prov_index <= len(provinces) - 1:
+                    if st.form_submit_button(f'Submit for {current_prov}'):
 
-            if st.session_state.current_prov_index != 0:
+                        if selected_dataset2 == "Fertilizer Price":
+                            fields = [Ammophos, Ammosul, Complete, Urea]
+                            field_names = ["ammophos_price", "ammosul_price", "complete_price", "urea_price"]
+                            
+                            # Attempt to convert all fields to float
+                            try:
+                                fields = [float(field) for field in fields]
+                                
+                            except ValueError:
+                                st.error("Please enter valid numeric values for all corn prices.")
+                                return
+                            
+                            if not all(fields):
+                                st.error("Please fill in all fields.")
+                                return
 
-                # Get the current province based on the index
-                current_prov = provinces[st.session_state.current_prov_index -1]
+                            new_data_white = {
+                                "month": current_month,
+                                "year": current_year,
+                                "province_id": current_prov,
+                                **dict(zip(field_names, fields))
+                            }
+                            new_data_yellow = {
+                                "month": current_month,
+                                "year": current_year,
+                                "province_id": current_prov,
+                                **dict(zip(field_names, fields))
+                            }
 
-                # Remove button logic
-                if st.form_submit_button(f'Remove {current_prov} data'):
 
-                    if not st.session_state.input_data[st.session_state.input_data['province_id'] == current_prov].empty:
-                        # Remove entries for the current province
-                        st.session_state.input_data = st.session_state.input_data[st.session_state.input_data['province_id'] != current_prov]
+                        elif selected_dataset2 == "Corn Price":
+                            fields1 = [W_Farmgate_Price, W_Retail_Price, W_Wholesale_Price]
+                            fields2 = [Y_Farmgate_Price, Y_Retail_Price, Y_Wholesale_Price]
+                            field_names = ["farmgate_corngrains_price", "retail_corngrits_price", "wholesale_corngrits_price"]
+                            
+                            # Attempt to convert all fields to float
+                            try:
+                                fields1 = [float(field1) for field1 in fields1]
+                                fields2 = [float(field2) for field2 in fields2]
+                                
+                            except ValueError:
+                                st.error("Please enter valid numeric values for all corn prices.")
+                                return
+                            
+                            if not all(fields1) or not all(fields2):
+                                st.error("Please fill in all fields.")
+                                return
 
-                        st.session_state.current_prov_index -= 1
+                            new_data_white = {
+                                "month": current_month,
+                                "year": current_year,
+                                "province_id": current_prov,
+                                "corn_type": "White Corn",
+                                **dict(zip(field_names, fields1))
+                            }
+                            new_data_yellow = {
+                                "month": current_month,
+                                "year": current_year,
+                                "province_id": current_prov,
+                                "corn_type": "Yellow Corn",
+                                **dict(zip(field_names, fields2))
+                            }
+                            
+                        elif selected_dataset2 == "Corn Production":
+
+                            # Attempt to convert Production to a float
+                            try:
+                                W_Production = float(W_Production)
+                                Y_Production = float(Y_Production)
+                                
+                            except ValueError:
+                                st.error("Please enter a valid numeric value for corn production.")
+                                return
+                            
+                            if not W_Production or not Y_Production:
+                                st.error("Please fill in the production field.")
+                                return
+                            
+                            new_data_white = {
+                                "month": current_month,
+                                "year": current_year,
+                                "province_id": current_prov,
+                                "corn_type": "White Corn",
+                                "corn_production": W_Production
+                            }
+                            new_data_yellow = {
+                                "month": current_month,
+                                "year": current_year,
+                                "province_id": current_prov,
+                                "corn_type": "Yellow Corn",
+                                "corn_production": Y_Production
+                            }
+
+                        elif selected_dataset2 == "Weather Info":
+                            fields = [temp_max, temp_min, temp, dew, humidity, precip, precipprob, precipcover, windspeed, sealevelpressure, visibility, solarradiation, uvindex, severerisk, cloudcover]
+                            field_names = ["tempmax", "tempmin", "temp", "dew", "humidity", "precip", "precipprob", "precipcover", "windspeed", "sealevelpressure", "visibility", "solarradiation", "uvindex", "severerisk", "cloudcover"]
+                            
+                            # Attempt to convert all fields to float
+                            try:
+                                fields = [float(field) for field in fields]
+                                
+                            except ValueError:
+                                st.error("Please enter valid numeric values for all corn prices.")
+                                return
+                            
+                            if not all(fields):
+                                st.error("Please fill in all fields.")
+                                return
+
+                            new_data_white = {
+                                "month": current_month,
+                                "year": current_year,
+                                "province_id": current_prov,
+                                "corn_type": "White Corn",
+                                **dict(zip(field_names, fields)),
+                                "conditions": conditions
+                            }
+                            new_data_yellow = {
+                                "month": current_month,
+                                "year": current_year,
+                                "province_id": current_prov,
+                                "corn_type": "Yellow Corn",
+                                **dict(zip(field_names, fields)),
+                                "conditions": conditions
+                            }
+
+
+                        new_row_df = pd.DataFrame([new_data_white])
+                        st.session_state.input_data = pd.concat([st.session_state.input_data, new_row_df], ignore_index=True)
+                        
+                        new_row_df = pd.DataFrame([new_data_yellow])
+                        st.session_state.input_data = pd.concat([st.session_state.input_data, new_row_df], ignore_index=True)
+
+                        # Clear text inputs
+                        clear_text_input()
+
+                        st.session_state.form_key += 1
+                        st.session_state.current_prov_index += 1
+                        st.success(f"Data for {current_prov} added successfully!")
+                        st.rerun()  # Rerun to reflect changes
+
+                else:
+
+                    if st.form_submit_button('Submit to the database'):
+                        
+                        # st.session_state.input_data['province_id'] = st.session_state.input_data['province_id'].map(provinces_num)
+                        # st.session_state.input_data['corn_type'] = st.session_state.input_data['corn_type'].map(corn_type)
+
+                        if selected_dataset2 == "Fertilizer Price":
+                            # submit_predictions_fertilizer(st.session_state.input_data, user_id)
+                            st.session_state.input_data = fertilizer_database
+
+                        elif selected_dataset2 == "Corn Price":
+                            # submit_predictions_price(st.session_state.input_data, user_id, corn_type)
+                            st.session_state.input_data = price_database
+
+                        elif selected_dataset2 == "Corn Production":
+                            # submit_predictions_production(st.session_state.input_data, user_id, corn_type)
+                            st.session_state.input_data = production_database
+                            
+                        elif selected_dataset2 == "Weather Info":
+                            # st.session_state.input_data['conditions'] = st.session_state.input_data['conditions'].map(conditions_num)
+                            # submit_predictions_weather(st.session_state.input_data, user_id)
+                            st.session_state.input_data = weather_database
+
+
+                        st.session_state.form_key = 0
+                        st.session_state.current_prov_index = 0
+                        st.session_state.selected_dataset2_num += 1
+
+                        # Clear text inputs
+                        clear_text_input()
 
                         st.rerun() # Rerun to reflect changes
 
-                        st.success(f"Data for {current_prov} removed successfully!")
+                if st.session_state.current_prov_index != 0:
 
-                    else:
-                        st.warning(f"No data found for {current_prov} to remove.")
+                    # Get the current province based on the index
+                    current_prov = provinces[st.session_state.current_prov_index -1]
 
-            # Display updated DataFrame again after removal
-            st.dataframe(st.session_state.input_data)
+                    # Remove button logic
+                    if st.form_submit_button(f'Remove {current_prov} data'):
+
+                        if not st.session_state.input_data[st.session_state.input_data['province_id'] == current_prov].empty:
+                            # Remove entries for the current province
+                            st.session_state.input_data = st.session_state.input_data[st.session_state.input_data['province_id'] != current_prov]
+
+                            st.session_state.current_prov_index -= 1
+
+                            st.rerun() # Rerun to reflect changes
+
+                            st.success(f"Data for {current_prov} removed successfully!")
+
+                        else:
+                            st.warning(f"No data found for {current_prov} to remove.")
+
+                # Display updated DataFrame again after removal
+                st.dataframe(st.session_state.input_data)
+                
+    else:
+        st.success("Your System is Ready to be train")     
+        st.write("Do you want train the model with the new data or add another?")   
+
+
+        col_1, col_2 = st.columns(2)
+
+        with col_1:
+            if st.button("Train Data"):
+                st.success("TRAINING MODEL") 
+
+# # ==============================================[BUILD DATASET]=================================================================================   
+
+#                 def build_dataset(province_id, corn_type, dataset1, dataset2, dataset3, dataset4):
+                    
+#                     # Filter datasets based on province_id and corn_type
+#                     filtered_dataset1 = dataset1[(dataset1['province_id'] == province_id) & (dataset1['corn_type'] == corn_type)]
+#                     filtered_dataset2 = dataset2[(dataset2['province_id'] == province_id) & (dataset2['corn_type'] == corn_type)]
+#                     filtered_dataset3 = dataset3[(dataset3['province_id'] == province_id) & (dataset3['corn_type'] == corn_type)]
+#                     filtered_dataset4 = dataset4[(dataset4['province_id'] == province_id) & (dataset4['corn_type'] == corn_type)]
+                    
+#                     # Merge datasets on 'user_id' (or another common key)
+#                     merged_dataset = pd.merge(filtered_dataset1, filtered_dataset2)
+#                     merged_dataset = pd.merge(merged_dataset, filtered_dataset3)
+#                     merged_dataset = pd.merge(merged_dataset, filtered_dataset4)
+#                     # merged_dataset = merged_dataset.drop(['province_id', 'user_id', 'corn_type'], axis=1)
+#                     merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
+                    
+#                     return merged_dataset
+
+
+# # ==============================================[PREDICTS X TEST]=================================================================================   
+
+                def predict_predictor(dataset, predictor_set, corn_type, folder_type, province_name):
+                    # Initialize a dictionary to store models and predictions
+                    models = {}
+                    
+                    # Create an empty DataFrame to hold all predictions
+                    predictions_df = pd.DataFrame()
+                    
+                    # Define features (X) - all columns except those in f_predictor
+                    feature_columns = [col for col in dataset.columns if col not in predictor_set]
+                    
+                    for target in predictor_set:
+                        # Define features (X) and target (y)
+                        X = dataset[feature_columns]
+                        y = dataset[target]
+                    
+                        # Split the data into training and testing sets
+                        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+                    
+                    
+                        # # Create a Linear Regression model
+                        # model = LinearRegression()
+
+                        # Create a Bayesian Ridge Regression model
+                        model = BayesianRidge()
+                        
+                        
+                        # Fit the model on the training data
+                        model.fit(X_train, y_train)
+                        
+                        # Make predictions on the test set
+                        y_pred = model.predict(X_test)
+                        
+                        # Store the model and predictions
+                        models[target] = model
+                        # Add predictions to the predictions_df DataFrame
+                        predictions_df[target] = pd.Series(y_pred, index=X_test.index)  # Aligning with the index of X_test
+                        
+                        predictions_df = predictions_df.iloc[:24]
+                    
+                    # Adding Month and Year in the dataset
+                    # Set the index to start from 1
+                    predictions_df.index = range(0, len(predictions_df))
+                    
+                    # Assuming white_davao_region is your existing DataFrame
+                    # Initialize last_year and last_month
+                    last_year = dataset['year'].iloc[-1]
+                    last_month = dataset['month'].iloc[-1]
+                    last_month = last_month + 1
+
+                    # Create an empty list to hold new year and month pairs
+                    year_month_pairs = []
+                    
+                    num_rows = len(predictions_df)
+                    
+                    # Generate year and month pairs starting from last_year and last_month
+                    for i in range(num_rows):  # Generate 12 months
+                        # Calculate the month
+                        current_month = (last_month + i - 1) % 12 + 1  # Wrap around using modulo
+                        current_year = last_year + (last_month + i - 1) // 12  # Increment year if month exceeds December
+                        
+                        year_month_pairs.append((current_year, current_month))
+                    
+                    # Create a DataFrame from the year-month pairs
+                    year_month_df = pd.DataFrame(year_month_pairs, columns=['year', 'month'])
+                    
+                    final_dataset = pd.concat([year_month_df, predictions_df], axis=1)
+
+
+                    final_dataset.to_csv(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/predictor_dataset.csv', index=False)
+                    print('Cleaned dataset saved')
+
+                    return final_dataset  
+
+
+
+# # ==============================================[RERF PREDICTS]=================================================================================   
+
+                def extend_predictors(x_train, x_test):
+  
+                    poly = PolynomialFeatures(degree=2, include_bias=True)
+                    x_train = poly.fit_transform(x_train)
+                    x_test = poly.transform(x_test)
+                    
+                    return x_train, x_test
+
+                def RERF_Model(X, Y, corn_type, folder_type, province_name, target):
+                    
+                    # Step 2: Split the data into training and testing sets
+                    x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+
+
+                    # if ((province_name == "davao_de_oro" and target == "farmgate_corngrains_price" and corn_type == "White Corn") or
+                    #     (province_name == "davao_del_sur" and target == "retail_corngrits_price" and corn_type == "White Corn") or
+                    #     (province_name == "davao_oriental" and target == "retail_corngrits_price" and corn_type == "White Corn") or
+                    #     (province_name == "davao_city" and target == "retail_corngrits_price" and corn_type == "White Corn") or
+                    #     (province_name == "davao_city" and target == "farmgate_corngrains_price" and corn_type == "Yellow Corn")):
+
+                    #     # Optional: Extend x_train and x_test with polynomial features
+                    #     x_train, x_test = extend_predictors(x_train, x_test)
+
+
+                    # Step 3: Perform k-fold cross-validation for Lasso to find optimal λ 
+                    lasso_cv = LassoCV(alphas=np.logspace(-6, 2, 100), cv=5, random_state=0)
+                    lasso_cv.fit(x_train, y_train)
+                
+                    # Get the best alpha (λ)
+                    lambda_star = lasso_cv.alpha_
+                    
+                    # Fit Lasso with optimal λ on training data
+                    lasso_optimal = Lasso(alpha=lambda_star)
+                    lasso_optimal.fit(x_train, y_train)
+                    
+                    # Calculate residuals for training data
+                    residuals_train = y_train - lasso_optimal.predict(x_train)
+                    
+                    # Step 4: Fit Random Forest on residuals from Lasso
+                    param_grid_rf = {
+                        'max_features': [2, 3],
+                        'min_samples_leaf': [2, 3, 4, 5],
+                        'min_samples_split': [8, 10, 12],
+                        }
+                    
+                    grid_search_rf = GridSearchCV(estimator=RandomForestRegressor(random_state=42),
+                                            param_grid=param_grid_rf, 
+                                            cv=5)
+                    
+                    grid_search_rf.fit(x_train, residuals_train)
+                    
+                    # Get best parameters for Random Forest
+                    best_params_rf = grid_search_rf.best_params_
+                
+                
+                    s_star1 = best_params_rf['min_samples_split']
+                    s_star2 = best_params_rf['min_samples_leaf']
+                    m_star = best_params_rf['max_features']
+                    
+                    # Fit Random Forest with optimal parameters on training data
+                    rf_optimal = RandomForestRegressor(min_samples_split=s_star1, min_samples_leaf=s_star2, max_features=m_star, random_state=42)
+                    rf_optimal.fit(x_train, residuals_train)
+                    
+                    
+                    with open(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/Lasso_models_for_{target}.joblib', 'wb') as f:
+                        joblib.dump(lasso_optimal, f)
+                        
+                    with open(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/RF_models_for_{target}.joblib', 'wb') as f:
+                        joblib.dump(rf_optimal, f)
+
+                    # Predictions on test set using both models
+                    y_pred_lasso_test = lasso_optimal.predict(x_test)
+                    
+                    # Calculate residuals for test set
+                    residuals_test = y_test - y_pred_lasso_test
+                    
+                    # Final predictions from Random Forest on test set residuals
+                    y_pred_rf_test = rf_optimal.predict(x_test)
+                    
+                    # Combine predictions from Lasso and Random Forest for final prediction
+                    final_predictions = y_pred_lasso_test + y_pred_rf_test
+                    
+                    # Evaluation metrics can be calculated here (e.g., MAE, MSE)
+                    mae = np.round(mean_absolute_error(y_test, final_predictions), 4)
+                    mse = np.round(mean_squared_error(y_test, final_predictions), 4)
+                    r2 = np.round(r2_score(y_test, final_predictions), 4)
+                                
+                    return r2
+
+
+
+
+                # White Corn Datasets
+                white_corn_davao_region = get_white_davao_region_dataset()
+                white_corn_davao_de_oro = get_white_davao_de_oro_dataset()
+                white_corn_davao_del_norte = get_white_davao_del_norte_dataset()
+                white_corn_davao_del_sur = get_white_davao_del_sur_dataset()
+                white_corn_davao_oriental = get_white_davao_oriental_dataset()
+                white_corn_davao_city = get_white_davao_city_dataset()
+
+                # Yellow Corn Datasets
+                yellow_corn_davao_region = get_yellow_davao_region_dataset()
+                yellow_corn_davao_de_oro = get_yellow_davao_de_oro_dataset()
+                yellow_corn_davao_del_norte = get_yellow_davao_del_norte_dataset()
+                yellow_corn_davao_del_sur = get_yellow_davao_del_sur_dataset()
+                yellow_corn_davao_oriental = get_yellow_davao_oriental_dataset()
+                yellow_corn_davao_city = get_yellow_davao_city_dataset()
+                
+
+                # st.dataframe(white_corn_davao_region)
+                # st.dataframe(white_corn_davao_region_dataset)
+
+                w_f_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
+                            'cloudcover', 'conditions', 'retail_corngrits_price', 'wholesale_corngrits_price',
+                            'wholesale_corngrains_price']
+
+                w_r_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
+                            'cloudcover', 'conditions', 'farmgate_corngrains_price', 'wholesale_corngrits_price',
+                            'wholesale_corngrains_price']
+
+                w_w_predictor_1 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
+                            'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrits_price',
+                            'wholesale_corngrains_price']
+                
+                w_w_predictor_2 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
+                            'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrits_price',
+                            'wholesale_corngrits_price']
+
+
+
+
+                y_f_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
+                            'cloudcover', 'conditions', 'retail_corngrains_price', 'wholesale_corngrits_price',
+                            'wholesale_corngrains_price']
+
+                y_r_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
+                            'cloudcover', 'conditions', 'farmgate_corngrains_price', 'wholesale_corngrits_price',
+                            'wholesale_corngrains_price']
+
+                y_w_predictor_1 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
+                            'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrains_price',
+                            'wholesale_corngrains_price']
+                
+                y_w_predictor_2 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
+                            'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrains_price',
+                            'wholesale_corngrits_price']
+
+
+
+
+                # Load datasets
+                white_province_mapping = {
+                    "davao_region": white_corn_davao_region,
+                    "davao_de_oro": white_corn_davao_de_oro,
+                    "davao_del_norte": white_corn_davao_del_norte,
+                    "davao_del_sur": white_corn_davao_del_sur,
+                    "davao_oriental": white_corn_davao_oriental,
+                    "davao_city": white_corn_davao_city,
+                }
+
+                # Load datasets
+                yellow_province_mapping = {
+                    "davao_region": yellow_corn_davao_region,
+                    "davao_de_oro": yellow_corn_davao_de_oro,
+                    "davao_del_norte": yellow_corn_davao_del_norte,
+                    "davao_del_sur": yellow_corn_davao_del_sur,
+                    "davao_oriental": yellow_corn_davao_oriental,
+                    "davao_city": yellow_corn_davao_city,
+                }
+
+# # ==============================================[WHITE CORN PRICE PREDICTS]=================================================================================   
+                
+                st.write("White Corn Price Train")
+                for dataset_name, dataset in white_province_mapping.items():
+
+                    dataset = dataset.drop(["retail_corngrains_price"], axis=1)
+
+                    # predict farmgate price for white_davao_region
+                    predict_predictor(dataset, w_f_predictor, "White Corn", "For Farmgate", f"{dataset_name}")
+                
+                    f_X = dataset.drop(['farmgate_corngrains_price'], axis=1)
+                    f_Y = dataset['farmgate_corngrains_price']
+                    f_r2 = RERF_Model(f_X, f_Y, "White Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
+
+
+
+                    
+                    # predict retail price for white_davao_region
+                    predict_predictor(dataset, w_r_predictor, "White Corn", "For Retail",  f"{dataset_name}")
+                
+                    r_X = dataset.drop(['retail_corngrits_price'], axis=1)
+                    r_Y = dataset['retail_corngrits_price']
+                    r_r2 = RERF_Model(r_X, r_Y, "White Corn", "For Retail",  f"{dataset_name}", "retail_corngrits_price") 
+
+
+
+
+                    # predict wholesale corn grits price for white_davao_region
+                    predict_predictor(dataset, w_w_predictor_1, "White Corn", "For Wholesale",  f"{dataset_name}")
+                    print()
+                
+                    w_X_1 = dataset.drop(['wholesale_corngrits_price'], axis=1)
+                    w_Y_1 = dataset['wholesale_corngrits_price']
+                    w_r2_1 = RERF_Model(w_X_1, w_Y_1, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
             
+
+
+
+
+                    # predict wholesale corn grains price for white_davao_region
+                    predict_predictor(dataset, w_w_predictor_2, "White Corn", "For Wholesale",  f"{dataset_name}")
+                    print()
+                
+                    w_X_2 = dataset.drop(['wholesale_corngrains_price'], axis=1)
+                    w_Y_2 = dataset['wholesale_corngrains_price']
+                    w_r2_2 = RERF_Model(w_X_2, w_Y_2, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
+
+
+
+                    st.success(f'White Corn {dataset_name} trained successfully!')
+                    st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
+                    st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
+
+
+# # # ==============================================[YELLOW CORN PRICE PREDICTS]=================================================================================   
+                st.write(" ")
+                st.write("Yellow Corn Price Train")
+                for dataset_name, dataset in yellow_province_mapping.items():
+
+                    dataset = dataset.drop(["retail_corngrits_price"], axis=1)
+
+                    # predict farmgate price for white_davao_region
+                    predict_predictor(dataset, y_f_predictor, "Yellow Corn", "For Farmgate", f"{dataset_name}")
+                
+                    f_X = dataset.drop(['farmgate_corngrains_price'], axis=1)
+                    f_Y = dataset['farmgate_corngrains_price']
+                    f_r2 = RERF_Model(f_X, f_Y, "Yellow Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
+
+
+
+                    
+                    # predict retail price for white_davao_region
+                    predict_predictor(dataset, y_r_predictor, "Yellow Corn", "For Retail",  f"{dataset_name}")
+
+                    r_X = dataset.drop(['retail_corngrains_price'], axis=1)
+                    r_Y = dataset['retail_corngrains_price']
+                    r_r2 = RERF_Model(r_X, r_Y, "Yellow Corn", "For Retail",  f"{dataset_name}", "retail_corngrains_price") 
+
+
+
+                    # predict wholesale corn grits price for white_davao_region
+                    predict_predictor(dataset, y_w_predictor_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
+                    print()
+                
+                    w_X_1 = dataset.drop(['wholesale_corngrits_price'], axis=1)
+                    w_Y_1 = dataset['wholesale_corngrits_price']
+                    w_r2_1 = RERF_Model(w_X_1, w_Y_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
+                
+
+
+
+
+                    # predict wholesale corn grains price for white_davao_region
+                    predict_predictor(dataset, y_w_predictor_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
+                    print()
+                
+                    w_X_2 = dataset.drop(['wholesale_corngrains_price'], axis=1)
+                    w_Y_2 = dataset['wholesale_corngrains_price']
+                    w_r2_2 = RERF_Model(w_X_2, w_Y_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
+
+
+
+                    st.success(f'Yellow Corn {dataset_name} trained successfully!')
+                    st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
+                    st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
+
+#                 st.rerun() # Rerun to reflect changes
+    
+        with col_2:
+            if st.button("Add More Data"):
+                st.session_state.form_key = 0
+                st.session_state.current_prov_index = 0
+                st.session_state.selected_dataset2_num = 0
+
+                st.session_state.input_data = production_database
+
+                st.rerun() # Rerun to reflect changes
