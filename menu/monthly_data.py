@@ -42,6 +42,8 @@ def app():
                 # Create subplots - this is crucial for handling multiple traces cleanly
                 fig = make_subplots(specs=[[{"secondary_y": False}]])  # Use secondary_y if needed for different scales
 
+                title = f"Corn Prices in the Year {year}"
+
                 # Define price types based on dataset columns
                 if 'retail_corngrits_price' in dataset.columns:
                     price_types = {
@@ -57,7 +59,8 @@ def app():
                         'wholesale_corngrits_price': 'Wholesale Corn Grits Price',
                         'wholesale_corngrains_price': 'Wholesale Corn Grains Price'
                     }
-                else:
+                else: 
+                    title = f"Wholesale Prices in the Year {year}"
                     price_types = { # Default if none exists
                         'wholesale_corngrits_price': 'Wholesale Price',
                         'wholesale_corngrains_price': 'Wholesale Price'
@@ -80,7 +83,7 @@ def app():
 
                 # Update layout for better appearance
                 fig.update_layout(
-                    title=f"Corn Prices in the Year {year}",
+                    title=title,
                     xaxis_title="Month",
                     yaxis_title="Price",
                     template="plotly_dark",  # Or other base template if you prefer
@@ -135,18 +138,21 @@ def app():
             grouped = dataset.groupby('year')
 
             for year, group in reversed(list(grouped)):
-                # Create the Plotly Express line plot
-                fig = px.line(group,
-                            x="month",
-                            y="price",
-                            mode='markers+lines',  # Show both markers and lines
-                            marker=dict(size=8), # Adjust marker size
-                            hovertemplate=f"Price: %{{y}}<extra></extra>" # Custom hover
-                        )
-                
+                # Create the Plotly line plot
+                fig = go.Figure(data=[
+                    go.Scatter(
+                        x=group["month"],
+                        y=group["price"],
+                        mode='markers+lines',  # Show both markers and lines
+                        marker=dict(size=8),  # Adjust marker size
+                        hoverinfo='text',  # Use hoverinfo instead of hovertemplate for go.Scatter
+                        hovertext=[f"Price: {price}" for price in group["price"]]
+                    )
+                ])
+
                 # Update layout for better appearance
                 fig.update_layout(
-                    title=f"Corn Prices in the Year {year}",
+                    title=f"{price_data} in the Year {year}",
                     xaxis_title="Month",
                     yaxis_title="Price",
                     template="plotly_dark",  # Or other base template if you prefer
@@ -176,18 +182,15 @@ def app():
 
                     # Customize hover label appearance
                     hoverlabel=dict(
-                            bgcolor="rgba(0, 0, 0, 0.8)",  # Background color (semi-transparent black)
-                            font=dict(
-                                size=14,                  # Font size
-                                family="Arial",           # Font family
-                                color="white"             # Font color
-                            ),
-                            bordercolor="yellow"          # Border color of the tooltip
-                        )
+                        bgcolor="rgba(0, 0, 0, 0.8)",  # Background color (semi-transparent black)
+                        font=dict(
+                            size=14,                  # Font size
+                            family="Arial",           # Font family
+                            color="white"             # Font color
+                        ),
+                        bordercolor="yellow"          # Border color of the tooltip
                     )
-
-                # Rotate x-axis labels for readability
-                fig.update_xaxes(tickangle=-45)
+                )
 
                 # Display the plot in Streamlit
                 st.plotly_chart(fig, use_container_width=True)  # Make the plot responsive

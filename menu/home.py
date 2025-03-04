@@ -44,11 +44,59 @@ def app():
                 <p>This website helps the farmers to early decision planning using predicted corn price in a short period of time.</p>
             </div>
         </div>
-        <h4> Here are the features of this system</h4>
-        <div class="steps_info">
-            <h5> Monthly Data </h5>
-
-        </div>
 
     """, unsafe_allow_html=True)
 
+
+    st.markdown(f"""
+        <h4>Here are the features of this system for farmers, traders and consumers</h4>
+
+        <div class="step_info">
+            <div class="step_info_box_1">
+                <h5>Monthly Data</h5>
+                <p>This feature of the app will show the previous data from 1990 to the present year in graph plots.</p>
+            </div>
+            <div class="step_info_box_2">
+                <h5>Predicted Data (Graph Plots)</h5>
+                <p>This feature of the app will show the predicted data from one year or two years in graph plots.</p>
+            </div>
+            <div class="step_info_box_3">
+                <h5>Predicted Data (Choropleth Plots)</h5>
+                <p>This feature of the app will show the predicted data from one year or two years in choropleth plots.</p>
+            </div>
+            <div class="step_info_box_4">
+                <h5>Manage Data</h5>
+                <p>This feature of the app allows users to add new data into the database, ensuring that the application remains dynamic and responsive to user needs.</p>
+            </div>
+        </div>  <!-- Closing the step_info div -->
+    """, unsafe_allow_html=True)
+
+
+
+    st.markdown(f"""
+        <h4>Here are the features of this system for the admin</h4>
+
+        <div class="step_info">
+            <div class="step_info_box_1">
+                <h5>Monthly Data</h5>
+                <p>This feature of the app will show the previous data from 1990 to the present year in graph plots.</p>
+            </div>
+            <div class="step_info_box_2">
+                <h5>Predicted Data (Graph Plots)</h5>
+                <p>This feature of the app will show the predicted data from one year or two years in graph plots.</p>
+            </div>
+            <div class="step_info_box_3">
+                <h5>Predicted Data (Choropleth Plots)</h5>
+                <p>This feature of the app will show the predicted data from one year or two years in choropleth plots.</p>
+            </div>
+            <div class="step_info_box_4">
+                <h5>Comments</h5>
+                <p>This feature of the app will allow the users to provide advice or complaints to the system.</p>
+            </div>
+            <div class="step_info_box_5">
+                <h5>Comments</h5>
+                <p>This feature of the app will allow the users to provide advice or complaints to the system.</p>
+            </div>
+        </div>  <!-- Closing the step_info div -->
+
+    """, unsafe_allow_html=True)
