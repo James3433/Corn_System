@@ -84,7 +84,6 @@ def app():
                 # Update layout for better appearance
                 fig.update_layout(
                     title=title,
-                    title=f"Corn Prices in the Year {year}",
                     xaxis_title="Month",
                     yaxis_title="Price",
                     template="plotly_dark",  # Or other base template if you prefer
@@ -139,7 +138,6 @@ def app():
             grouped = dataset.groupby('year')
 
             for year, group in reversed(list(grouped)):
-
                 # Create the Plotly line plot
                 fig = go.Figure(data=[
                     go.Scatter(
@@ -151,10 +149,10 @@ def app():
                         hovertext=[f"Price: {price}" for price in group["price"]]
                     )
                 ])
-                
+
                 # Update layout for better appearance
                 fig.update_layout(
-                    title=f"Corn Prices in the Year {year}",
+                    title=f"{price_data} in the Year {year}",
                     xaxis_title="Month",
                     yaxis_title="Price",
                     template="plotly_dark",  # Or other base template if you prefer
