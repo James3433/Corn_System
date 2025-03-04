@@ -42,6 +42,7 @@ def app():
                 # Create subplots - this is crucial for handling multiple traces cleanly
                 fig = make_subplots(specs=[[{"secondary_y": False}]])  # Use secondary_y if needed for different scales
 
+<<<<<<< HEAD
                 title = f"Corn Prices in the Year {year}"
 
                 # Define price types based on dataset columns
@@ -66,6 +67,29 @@ def app():
                         'wholesale_corngrains_price': 'Wholesale Price'
                     }
 
+=======
+                # Define price types based on dataset columns
+                if 'retail_corngrits_price' in dataset.columns:
+                    price_types = {
+                        'farmgate_corngrains_price': 'Farmgate Corn Grains Price',
+                        'retail_corngrits_price': 'Retail Corn Grits Price',
+                        'wholesale_corngrits_price': 'Wholesale Corn Grits Price',
+                        'wholesale_corngrains_price': 'Wholesale Corn Grains Price'
+                    }
+                elif 'retail_corngrains_price' in dataset.columns:
+                    price_types = {
+                        'farmgate_corngrains_price': 'Farmgate Corn Grains Price',
+                        'retail_corngrains_price': 'Retail Corn Grains Price',
+                        'wholesale_corngrits_price': 'Wholesale Corn Grits Price',
+                        'wholesale_corngrains_price': 'Wholesale Corn Grains Price'
+                    }
+                else:
+                    price_types = { # Default if none exists
+                        'wholesale_corngrits_price': 'Wholesale Price',
+                        'wholesale_corngrains_price': 'Wholesale Price'
+                    }
+
+>>>>>>> d780fd56d109d158f16214befdaefce9413ae932
                 # Plot each price type
                 for price_col, label in price_types.items():
                     if price_col in group.columns:  # Check if the column exists
@@ -83,7 +107,11 @@ def app():
 
                 # Update layout for better appearance
                 fig.update_layout(
+<<<<<<< HEAD
                     title=title,
+=======
+                    title=f"Corn Prices in the Year {year}",
+>>>>>>> d780fd56d109d158f16214befdaefce9413ae932
                     xaxis_title="Month",
                     yaxis_title="Price",
                     template="plotly_dark",  # Or other base template if you prefer
@@ -138,6 +166,7 @@ def app():
             grouped = dataset.groupby('year')
 
             for year, group in reversed(list(grouped)):
+<<<<<<< HEAD
                 # Create the Plotly line plot
                 fig = go.Figure(data=[
                     go.Scatter(
@@ -153,6 +182,20 @@ def app():
                 # Update layout for better appearance
                 fig.update_layout(
                     title=f"{price_data} in the Year {year}",
+=======
+                # Create the Plotly Express line plot
+                fig = px.line(group,
+                            x="month",
+                            y="price",
+                            mode='markers+lines',  # Show both markers and lines
+                            marker=dict(size=8), # Adjust marker size
+                            hovertemplate=f"Price: %{{y}}<extra></extra>" # Custom hover
+                        )
+                
+                # Update layout for better appearance
+                fig.update_layout(
+                    title=f"Corn Prices in the Year {year}",
+>>>>>>> d780fd56d109d158f16214befdaefce9413ae932
                     xaxis_title="Month",
                     yaxis_title="Price",
                     template="plotly_dark",  # Or other base template if you prefer
@@ -182,6 +225,7 @@ def app():
 
                     # Customize hover label appearance
                     hoverlabel=dict(
+<<<<<<< HEAD
                         bgcolor="rgba(0, 0, 0, 0.8)",  # Background color (semi-transparent black)
                         font=dict(
                             size=14,                  # Font size
@@ -191,6 +235,20 @@ def app():
                         bordercolor="yellow"          # Border color of the tooltip
                     )
                 )
+=======
+                            bgcolor="rgba(0, 0, 0, 0.8)",  # Background color (semi-transparent black)
+                            font=dict(
+                                size=14,                  # Font size
+                                family="Arial",           # Font family
+                                color="white"             # Font color
+                            ),
+                            bordercolor="yellow"          # Border color of the tooltip
+                        )
+                    )
+
+                # Rotate x-axis labels for readability
+                fig.update_xaxes(tickangle=-45)
+>>>>>>> d780fd56d109d158f16214befdaefce9413ae932
 
                 # Display the plot in Streamlit
                 st.plotly_chart(fig, use_container_width=True)  # Make the plot responsive

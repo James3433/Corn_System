@@ -44,6 +44,14 @@ def app():
                 <p>This website helps the farmers to early decision planning using predicted corn price in a short period of time.</p>
             </div>
         </div>
+<<<<<<< HEAD
+=======
+        <h4> Here are the features of this system</h4>
+        <div class="steps_info">
+            <h5> Monthly Data </h5>
+
+        </div>
+>>>>>>> d780fd56d109d158f16214befdaefce9413ae932
 
     """, unsafe_allow_html=True)
 
