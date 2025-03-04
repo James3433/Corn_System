@@ -1,18 +1,22 @@
+import os
 import base64
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.graph_objects as go
 import folium
 import geopandas as gpd
+import joblib
 
 
 from branca.colormap import linear
 from sklearn.model_selection import train_test_split
-from supabase_connect import get_white_davao_region_dataset, get_white_davao_de_oro_dataset, get_white_davao_del_norte_dataset, get_white_davao_del_sur_dataset, get_white_davao_oriental_dataset, get_white_davao_city_dataset
-from supabase_connect import get_yellow_davao_region_dataset, get_yellow_davao_de_oro_dataset, get_yellow_davao_del_norte_dataset, get_yellow_davao_del_sur_dataset, get_yellow_davao_oriental_dataset, get_yellow_davao_city_dataset
+from sklearn.preprocessing import PolynomialFeatures
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
+from plotly.subplots import make_subplots
 
 def app():
     @st.cache_data
@@ -55,7 +59,7 @@ def app():
             </style>
     """, unsafe_allow_html=True)
 
-    def heatmap(dataset, title):
+    def heatmap(dataset, price_type, title):
         # Rename columns that contain "_price" to "price"
         dataset.rename(columns=lambda x: 'price' if '_price' in x else x, inplace=True)
 
@@ -100,17 +104,25 @@ def app():
         # Save the map as an HTML file
         map.save('./map.html')
 
+                # Define the colorbar image filename
+        colorbar_filename = f'{title} {price_type} Colorbar.png'
+
+        # Check if the colorbar image exists and delete it
+        if os.path.exists(colorbar_filename):
+            os.remove(colorbar_filename)
+
+
         # Create a vertical colormap image
         fig, ax = plt.subplots(figsize=(0.5, 8))
         fig.subplots_adjust(left=0.5)
         cb = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), 
                         cax=ax, orientation='vertical')
         cb.set_label(f'{title} in Davao Region')
-        plt.savefig('colorbar.png', bbox_inches='tight', dpi=100)
+        plt.savefig(colorbar_filename, bbox_inches='tight', dpi=100)
+
 
         # Display the map and colorbar in Streamlit
-
-        img_1 = get_img_as_base64("colorbar.png")
+        img_1 = get_img_as_base64(colorbar_filename)
 
         with open('./map.html', 'r', encoding='utf-8') as f:
             html_data = f.read()
@@ -127,177 +139,125 @@ def app():
 # ===================================================================================================
 
 
-    def predict_predictor(dataset, predictor_set):
-        # Initialize a dictionary to store models and predictions
-        models = {}
-        
-        # Create an empty DataFrame to hold all predictions
-        predictions_df = pd.DataFrame()
-        
-        # Define features (X) - all columns except those in f_predictor
-        feature_columns = [col for col in dataset.columns if col not in predictor_set]
-        
-        for target in predictor_set:
-            # Define features (X) and target (y)
-            X = dataset[feature_columns]
-            y = dataset[target]
-        
-            # Split the data into training and testing sets
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        
-            # Create a Linear Regression model
-            model = LinearRegression()
-            
-            # Fit the model on the training data
-            model.fit(X_train, y_train)
-            
-            # Make predictions on the test set
-            y_pred = model.predict(X_test)
-            
-            # Store the model and predictions
-            models[target] = model
-            # Add predictions to the predictions_df DataFrame
-            predictions_df[target] = pd.Series(y_pred, index=X_test.index)  # Aligning with the index of X_test
-            
-            predictions_df = predictions_df.iloc[:24]
-
-        return predictions_df
-
-
-
-    def RERF_Model(X, Y, predictor, lambda_star, m_star, s_star, name):
-        
+    def RERF_Model(corn_type, folder_type, province_name, target, price_type):
         RERF_pred = []
-        
-        # Define predictors and target variable
-        
-        # Step 2: Split the data into training and testing sets
-        x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
-        
-        
-        # Fit Lasso with optimal λ on training data
-        lasso_optimal = Lasso(alpha=lambda_star)
-        lasso_optimal.fit(x_train, y_train)
-        
-        # Calculate residuals for training data
-        residuals_train = y_train - lasso_optimal.predict(x_train)
-    
-        # Fit Random Forest with optimal parameters on training data
-        rf_optimal = RandomForestRegressor(n_estimators=m_star, max_depth=s_star, random_state=42)
-        rf_optimal.fit(x_train, residuals_train)
-        
-        for index, row in predictor.iterrows():
-            input_pred = row.values.reshape(1, -1)  # Reshape for single prediction
-            
-            # Predictions using Lasso
-            y_pred_lasso_test = lasso_optimal.predict(input_pred)
-            
-            # Final predictions from Random Forest on test set residuals
-            y_pred_rf_test = rf_optimal.predict(input_pred)
-            
-            # Combine predictions from Lasso and Random Forest for final prediction
-            final_prediction = y_pred_lasso_test + y_pred_rf_test
-            
-            RERF_pred.append(final_prediction[0])  # Append the single prediction
-        
-        return pd.Series([round(pred, 2) for pred in RERF_pred])  # Return as a Series or DataFrame if needed
 
+        try:
+            predictor = pd.read_csv(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/predictor_dataset.csv')
 
+            # # Polynomial Features (if applicable)
+            # if ((province_name == "davao_de_oro" and target == "farmgate_corngrains_price" and corn_type == "White Corn") or
+            #     (province_name == "davao_del_sur" and target == "retail_corngrits_price" and corn_type == "White Corn") or
+            #     (province_name == "davao_oriental" and target == "retail_corngrits_price" and corn_type == "White Corn") or
+            #     (province_name == "davao_city" and target == "retail_corngrits_price" and corn_type == "White Corn") or
+            #     (province_name == "davao_city" and target == "farmgate_corngrains_price" and corn_type == "Yellow Corn")):
 
-    def add_month_and_year(dataset, dataset_1):
-        # Set the index to start from 1
-        dataset.index = range(0, len(dataset))
-        
-        # Assuming white_davao_region is your existing DataFrame
-        # Initialize last_year and last_month
-        last_year = dataset_1['year'].iloc[-1]
-        last_month = dataset_1['month'].iloc[-1]
-        last_month = last_month + 1
+            #     # Optional: Extend x_train and x_test with polynomial features
+            #     poly = PolynomialFeatures(degree=2, include_bias=True)
+                
+            #     # Get column names before transformation
+            #     original_columns = predictor.columns
+                
+            #     # Transform data
+            #     predictor = poly.fit_transform(predictor)
+                
+            #     # Create new column names (you might need to adjust this based on poly.get_feature_names_out())
+            #     new_columns = poly.get_feature_names_out(original_columns)  # Requires scikit-learn >= 1.0
 
-        # Create an empty list to hold new year and month pairs
-        year_month_pairs = []
-        
-        num_rows = len(dataset)
-        
-        # Generate year and month pairs starting from last_year and last_month
-        for i in range(num_rows):  # Generate 12 months
-            # Calculate the month
-            current_month = (last_month + i - 1) % 12 + 1  # Wrap around using modulo
-            current_year = last_year + (last_month + i - 1) // 12  # Increment year if month exceeds December
-            
-            year_month_pairs.append((current_year, current_month))
-        
-        # Create a DataFrame from the year-month pairs
-        year_month_df = pd.DataFrame(year_month_pairs, columns=['year', 'month'])
-        
-        final_dataset = pd.concat([year_month_df, dataset], axis=1)
+            #     # Convert back to DataFrame
+            #     predictor = pd.DataFrame(predictor, columns=new_columns)
 
-        return final_dataset
+            # Load the models
+            try:
+                lasso_optimal = joblib.load(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/Lasso_models_for_{target}.joblib')
+                rf_optimal = joblib.load(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/RF_models_for_{target}.joblib')
+            except FileNotFoundError as e:
+                print(f"Error loading models: {e}")
+                return pd.DataFrame()  # Return an empty DataFrame
+
+            for index, row in predictor.iterrows():
+                input_pred = row.values.reshape(1, -1)  # Reshape for single prediction
+
+                # Predictions using Lasso
+                y_pred_lasso_test = lasso_optimal.predict(input_pred)
+
+                # Final predictions from Random Forest on test set residuals
+                y_pred_rf_test = rf_optimal.predict(input_pred)
+
+                # Combine predictions from Lasso and Random Forest for final prediction
+                final_prediction = y_pred_lasso_test + y_pred_rf_test
+
+                RERF_pred.append(final_prediction[0])  # Append the single prediction
+
+            final_predict = pd.Series([round(pred, 2) for pred in RERF_pred])
+            RERF_pred_df = predictor[['year','month']].copy() # Prevent SettingWithCopyWarning
+            RERF_pred_df[price_type] = final_predict
+
+            # st.dataframe(RERF_pred_df)
+
+            return RERF_pred_df  # Return the DataFrame
+
+        except FileNotFoundError as e:
+            print(f"Error loading predictor data: {e}")
+            return pd.DataFrame()  # Return an empty DataFrame
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            return pd.DataFrame()
 
 
 
 
-    def predict_dataset(dataset, f_star_1, f_star_2, f_star_3, r_star_1, r_star_2, r_star_3, w_star_1, w_star_2, w_star_3):
-        f_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
-                    'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
-                    'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
-                    'cloudcover', 'conditions', 'retail_corngrits_price', 'wholesale_corngrits_price']
-
-        r_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
-                    'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
-                    'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
-                    'cloudcover', 'conditions', 'farmgate_corngrains_price', 'wholesale_corngrits_price']
-
-        w_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
-                    'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
-                    'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
-                    'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrits_price']
-
+    def predict_dataset(corn_type, province_name):
 
         # predict farmgate price for white_davao_region
-        f_predictors_df = predict_predictor(dataset, f_predictor)
-        f_predictors_df = add_month_and_year(f_predictors_df, dataset)
-        f_X = dataset.drop(['farmgate_corngrains_price'], axis=1)
-        f_Y = dataset['farmgate_corngrains_price']
-        f_prediction = RERF_Model(f_X, f_Y, f_predictors_df, f_star_1, f_star_2, f_star_3, 'white_davao_region') 
+        f_price_type = "farmgate_corngrains_price"
+        f_folder_type = "For Farmgate"
+        f_target = "farmgate_corngrains_price"
+        f_prediction = RERF_Model(corn_type, f_folder_type, province_name, f_target, f_price_type) 
 
+        if corn_type == "White Corn":
+            # predict retail price for white_davao_region
+            r_price_type = "retail_corngrits_price"
+            r_folder_type = "For Retail"
+            r_target = "retail_corngrits_price"
+            r_prediction = RERF_Model(corn_type, r_folder_type, province_name, r_target, r_price_type)
 
-        # predict retail price for white_davao_region
-        r_predictors_df = predict_predictor(dataset, r_predictor)
-        r_predictors_df = add_month_and_year(r_predictors_df, dataset)
-        r_X = dataset.drop(['retail_corngrits_price'], axis=1)
-        r_Y = dataset['retail_corngrits_price']
-        r_prediction = RERF_Model(r_X, r_Y, r_predictors_df, r_star_1, r_star_2, r_star_3, 'white_davao_region') 
-
+        if corn_type == "Yellow Corn":
+            # predict retail price for white_davao_region
+            r_price_type = "retail_corngrains_price"
+            r_folder_type = "For Retail"
+            r_target = "retail_corngrains_price"
+            r_prediction = RERF_Model(corn_type, r_folder_type, province_name, r_target, r_price_type) 
 
         # predict wholesale price for white_davao_region
-        w_predictors_df = predict_predictor(dataset, w_predictor)
-        w_predictors_df = add_month_and_year(w_predictors_df, dataset)
-        w_X = dataset.drop(['wholesale_corngrits_price'], axis=1)
-        w_Y = dataset['wholesale_corngrits_price']
-        w_prediction = RERF_Model(w_X, w_Y, w_predictors_df, w_star_1, w_star_2, w_star_3, 'white_davao_region') 
+        w_price_type_1 = "wholesale_corngrits_price"
+        w_folder_type = "For Wholesale"
+        w_target_1 = "wholesale_corngrits_price"
+        w_prediction_1 = RERF_Model(corn_type, w_folder_type, province_name, w_target_1, w_price_type_1) 
 
+         # predict wholesale price for white_davao_region
+        w_price_type_2 = "wholesale_corngrains_price"
+        w_target_2 = "wholesale_corngrains_price"
+        w_prediction_2 = RERF_Model(corn_type, w_folder_type, province_name, w_target_2, w_price_type_2) 
+
+        # st.dataframe(f_prediction)
+        # st.dataframe(r_prediction)
+        # st.dataframe(w_prediction_1)
+        # st.dataframe(w_prediction_2)
 
         predict_dataset = pd.DataFrame()
-        predict_dataset['year'] = f_predictors_df['year']
-        predict_dataset['month'] = f_predictors_df['month']
-        predict_dataset['farmgate_price'] = f_prediction
-        predict_dataset['retail_price'] = r_prediction
-        predict_dataset['wholesale_price'] = w_prediction
+        r_prediction = r_prediction.drop(['year','month'], axis=1)
+        w_prediction_1 = w_prediction_1.drop(['year','month'], axis=1)
+        w_prediction_2 = w_prediction_2.drop(['year','month'], axis=1)
+        predict_dataset = pd.concat([f_prediction, r_prediction, w_prediction_1, w_prediction_2], axis=1)
+
 
         return predict_dataset
 
 
-    def merge_dataset(dataset1, dataset2, dataset3, dataset4):
-        # Merge datasets on 'user_id' (or another common key)
-        merged_dataset = pd.merge(dataset1, dataset2)
-        merged_dataset = pd.merge(merged_dataset, dataset3)
-        merged_dataset = pd.merge(merged_dataset, dataset4)
-        merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id'], axis=1)
-
-        return merged_dataset
     
     def manage_plot(dataset, selected_dataset):
+
         # Mapping full month names to three-letter abbreviations
         month_abbr = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 
                     7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
@@ -308,173 +268,119 @@ def app():
 
         num_rows = len(dataset)
 
-        # Rename columns that contain "_price" to "price"
-        # Assuming the dataset has specific columns for each price type
-        price_columns = ['farmgate_price', 'retail_price', 'wholesale_price']
+        # Define price types based on dataset columns
+        if 'retail_corngrits_price' in dataset.columns:
+            price_columns = ['farmgate_corngrains_price', 'retail_corngrits_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price']
         
-        # Create a figure and axis for the plot
-        fig, ax = plt.subplots(figsize=(14, 6), facecolor='#B7E505')
-        ax.set_facecolor('#B7E505') 
+        elif 'retail_corngrains_price' in dataset.columns:
+            price_columns = ['farmgate_corngrains_price', 'retail_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price']
 
-        # Plot each price type with different styles
+        # Create Plotly figure
+        fig = go.Figure()
+
+        # Plot each price type
         for price_type in price_columns:
             if price_type in dataset.columns:
-                ax.plot(dataset['Month Year'], dataset[price_type], marker='o', markersize=4, label=price_type.replace('_', ' ').title())
+                fig.add_trace(go.Scatter(
+                    x=dataset['Month Year'],
+                    y=dataset[price_type],
+                    mode='markers+lines',
+                    name=price_type.replace('_', ' ').title(),
+                    hovertemplate=f"Type: {price_type.replace('_', ' ').title()}<br>Price: %{{y}}<extra></extra>"
+                ))
 
-        ax.set_xlabel('Month', color='black')
-        ax.set_ylabel('Price', color='black')
-        ax.set_title(f'{selected_dataset} Price Data in {num_rows} Months', color='black')
+        # Update layout
+        fig.update_layout(
+            title=f'{selected_dataset} Price Data in {num_rows} Months',
+            xaxis_title="Month",
+            yaxis_title="Price",
+            template="plotly_white", # Or your preferred template
+            hovermode="x unified",
+            title_x=0.5,
+            plot_bgcolor='#B7E505',  # Yellow-Green for plot area
+            paper_bgcolor='#B7E505',  # Yellow-Green for surrounding paper
 
-        # Set x-tick labels with rotation for better readability
-        ax.set_xticklabels(dataset['Month Year'], rotation=45, ha='right')  # Rotate labels 45 degrees
+            font=dict(
+                family="Arial",  # Specify font family
+                size=15,        # Overall font size
+                color="black"    # Overall font color
+            ),
 
-        # Adjust the font size
-        for tick in ax.get_xticklabels():
-            tick.set_fontsize(6)
-            tick.set_color('black')  
-        for tick in ax.get_yticklabels():
-            tick.set_fontsize(8)
-            tick.set_color('black')  
+            xaxis=dict(
+                tickangle=-45,
+                titlefont=dict(size=15, color="black"),  # X-axis title font
+                tickfont=dict(size=12, color="black")    # X-axis tick labels font
+            ),
 
-        # Add a legend to identify each line
-        ax.legend(title='Price Type')
+            yaxis=dict(
+                titlefont=dict(size=15, color="black"),  # Y-axis title font
+                tickfont=dict(size=12, color="black")    # Y-axis tick labels font
+            ),
 
-        st.pyplot(fig)
+            title_font=dict(size=20, color="black"),  # Title font (overrides general font)
+            
+            # Customize hover label appearance
+            hoverlabel=dict(
+                    bgcolor="rgba(0, 0, 0, 0.8)",  # Background color (semi-transparent black)
+                    font=dict(
+                        size=14,                  # Font size
+                        family="Arial",           # Font family
+                        color="white"             # Font color
+                    ),
+                    bordercolor="yellow"          # Border color of the tooltip
+                )
+            )
+
+        st.plotly_chart(fig, use_container_width=True)
 
 
-    def prediction_dataset(province_configs, selected_dataset):
+    def prediction_dataset(province_configs, selected_dataset, corn_type):
 
         # Initialize an empty DataFrame to collect all predictions
         predictions_df = pd.DataFrame()
 
         # Loop through each province in the dictionary
         for province_name, config in province_configs.items():
-            f_star = config['f_star']
-            r_star = config['r_star']
-            w_star = config['w_star']
+            dataset_name = config['get_dataset_func']
             province_id = config['province_id'] # Get the province ID
-            
-            # Call the dataset function for the current province
-            response_1, response_2, response_3, response_4 = config['get_dataset_func']()
-            
-            # Merge datasets
-            dataset = merge_dataset(response_1, response_2, response_3, response_4)
-            
+
             # Predict dataset using the parameters
-            predict_df = predict_dataset(dataset,
-                                        f_star[0], f_star[1], f_star[2], 
-                                        r_star[0], r_star[1], r_star[2], 
-                                        w_star[0], w_star[1], w_star[2])
-            
+            predict_df = predict_dataset(corn_type, dataset_name)
+
             # Add province_id to predict_df
             predict_df['province_id'] = province_id
 
             # Append the current predict_df to predictions_df
             predictions_df = pd.concat([predictions_df, predict_df], ignore_index=True)
 
-            if selected_dataset == 'Graph Plots':
-                # Manage plotting for the current province
-                manage_plot(predict_df, province_name)
-
-        if selected_dataset == 'Heatmap':
-
-            return predictions_df
+        return predictions_df
 
 
-
-    province = ""
-    f_star = [0] * 3  # Initialize with zeros or appropriate values
-    r_star = [0] * 3
-    w_star = [0] * 3 
 
     # white corn province configurations
-    province_configs_1 = {
+    province_configs = {
         'Davao Region': {
-            'f_star': [0.01, 100, 20],
-            'r_star': [0.1, 200, 25],
-            'w_star': [0.1, 150, 15],
-            'get_dataset_func': get_white_davao_region_dataset,
+            'get_dataset_func': 'davao_region',
             'province_id': 1
         },
         'Davao de Oro': {
-            'f_star': [0.01, 150, 15],
-            'r_star': [0.1, 200, 30],
-            'w_star': [0.1, 200, 20],
-            'get_dataset_func': get_white_davao_de_oro_dataset,
+            'get_dataset_func': 'davao_de_oro',
             'province_id': 2
         },
         'Davao del Norte': {
-            'f_star': [0.01, 250, 15],
-            'r_star': [0.1, 250, 15],
-            'w_star': [0.1, 50, 5],
-            'get_dataset_func': get_white_davao_del_norte_dataset,
+            'get_dataset_func': 'davao_del_norte',
             'province_id': 3
         },
         'Davao del Sur': {
-            'f_star': [0.01, 50, 5],
-            'r_star': [1.0, 100, 10],
-            'w_star': [0.1, 100, 15],
-            'get_dataset_func': get_white_davao_del_sur_dataset,
+            'get_dataset_func': 'davao_del_sur',
             'province_id': 4
         },
         'Davao Oriental': {
-            'f_star': [0.1, 250, 20],
-            'r_star': [0.1, 50, None],
-            'w_star': [0.1, 150, 10],
-            'get_dataset_func': get_white_davao_oriental_dataset,
+            'get_dataset_func': 'davao_oriental',
             'province_id': 5
         },
         'Davao City': {
-            'f_star': [0.01, 50, 20],
-            'r_star': [0.01, 100, 10],
-            'w_star': [0.1, 250, 15],
-            'get_dataset_func': get_white_davao_city_dataset,
-            'province_id': 6
-        }
-    }
-
-    # yellow corn province configurations
-    province_configs_2 = {
-        'Davao Region': {
-            'f_star': [0.1, 250, 15],
-            'r_star': [0.1, 250, 15],
-            'w_star': [0.1, 300, 20],
-            'get_dataset_func': get_yellow_davao_region_dataset,
-            'province_id': 1
-        },
-        'Davao de Oro': {
-            'f_star': [0.1, 150, 20],
-            'r_star': [0.01, 200, 20],
-            'w_star': [0.01, 50, 20],
-            'get_dataset_func': get_yellow_davao_de_oro_dataset,
-            'province_id': 2
-        },
-        'Davao del Norte': {
-            'f_star': [1.0, 300, 15],
-            'r_star': [0.1, 300, 10],
-            'w_star': [0.1, 250, 15],
-            'get_dataset_func': get_yellow_davao_del_norte_dataset,
-            'province_id': 3
-        },
-        'Davao del Sur': {
-            'f_star': [0.01, 300, 15],
-            'r_star': [0.01, 150, 25],
-            'w_star': [1.0, 300, 20],
-            'get_dataset_func': get_yellow_davao_del_sur_dataset,
-            'province_id': 4
-        },
-        'Davao Oriental': {
-            'f_star': [0.01, 250, 25],
-            'r_star': [0.01, 250, 10],
-            'w_star': [0.01, 300, 20],
-            'get_dataset_func': get_yellow_davao_oriental_dataset,
-            'province_id': 5
-        },
-        'Davao City': {
-            'f_star': [0.1, 250, 30],
-            'r_star': [0.01, 150, None],
-            'w_star': [0.01, 300, 20],
-            'get_dataset_func': get_yellow_davao_city_dataset,
+            'get_dataset_func': 'davao_city',
             'province_id': 6
         }
     }
@@ -484,12 +390,36 @@ def app():
 
 
     if selected_dataset == 'Graph Plots':
+        year = 12  # Default value is 11
+
+        selected_year = st.selectbox("Choose an year:", ['1 Year', '2 Year'])
+
+        if selected_year == "1 Year":
+            year = 12 # Overwrite default only if button is pressed
+
+        if selected_year == "2 Year":
+            year = 24  # Overwrite default only if button is pressed
 
         with st.expander("White Predictions Plots"):
-            prediction_dataset(province_configs_1, selected_dataset)
+            predictions_df = prediction_dataset(province_configs, selected_dataset, "White Corn")
+
+            for province_name, config in province_configs.items():
+                province_id = config['province_id']
+                predictions_df_1 = predictions_df[predictions_df['province_id'] == province_id]
+                predictions_df_1 = predictions_df_1.iloc[:year] # Always slice the df, default or button press
+                manage_plot(predictions_df_1, province_name)
+
+
         
         with st.expander("Yellow Predictions Plots"):
-            prediction_dataset(province_configs_2, selected_dataset)
+            predictions_df = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
+
+            for province_name, config in province_configs.items():
+                province_id = config['province_id']
+                predictions_df_1 = predictions_df[predictions_df['province_id'] == province_id]
+                predictions_df_1 = predictions_df_1.iloc[:year] # Always slice the df, default or button press
+                manage_plot(predictions_df_1, province_name)
+
 
 
 
@@ -504,8 +434,8 @@ def app():
         province_list = ['Davao Region', 'Davao de Oro', 'Davao del Norte', 'Davao del Sur', 'Davao Oriental', 'Davao City']
 
 
-        white_prediction_df = prediction_dataset(province_configs_1, selected_dataset)
-        yellow_prediction_df = prediction_dataset(province_configs_2, selected_dataset)
+        white_prediction_df = prediction_dataset(province_configs, selected_dataset, "White Corn")
+        yellow_prediction_df = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
         
 
         # Reverse the dictionary
@@ -531,7 +461,7 @@ def app():
 
 
         # Get unique values from the 'year' column and convert to a list
-        year_option_list = white_prediction_df['year'].unique().tolist()
+        year_option_list = [int(year) for year in white_prediction_df['year'].unique().tolist()]
 
 
         # Check if Month input is valid and adjust Year accordingly
@@ -555,37 +485,40 @@ def app():
         white_filtered_data['province'] = white_filtered_data['province_id'].map(lambda x: province_list[x - 1] if x - 1 < len(province_list) else None)        
         yellow_filtered_data['province'] = yellow_filtered_data['province_id'].map(lambda x: province_list[x - 1] if x - 1 < len(province_list) else None) 
 
-        w_farmgate_df = white_filtered_data[['province', 'farmgate_price']]
+        w_farmgate_df = white_filtered_data[['province', 'farmgate_corngrains_price']]
         w_retail_df = white_filtered_data[['province', 'retail_price']]
-        w_wholesale_df = white_filtered_data[['province', 'wholesale_price']]
+        w_wholesale_df_1 = white_filtered_data[['province', 'wholesale_corngrits_price']]
+        w_wholesale_df_2 = white_filtered_data[['province', 'wholesale_corngrains_price']]
 
-        y_farmgate_df = yellow_filtered_data[['province', 'farmgate_price']]
-        y_retail_df = yellow_filtered_data[['province', 'retail_price']]
-        y_wholesale_df = yellow_filtered_data[['province', 'wholesale_price']]
+        y_farmgate_df = yellow_filtered_data[['province', 'farmgate_corngrains_price']]
+        y_retail_df = yellow_filtered_data[['province', 'retail_corngrains_price']]
+        y_wholesale_df_1 = yellow_filtered_data[['province', 'wholesale_corngrits_price']]
+        y_wholesale_df_2 = yellow_filtered_data[['province', 'wholesale_corngrains_price']]
 
-
-        title_1 = "White Corn Price"
-        title_2 = "Yellow Corn Price"
 
 
         col1, col2 = st.columns((2))
         with col1:
             st.header("White Corn")
             st.header("Farmgate Price")
-            heatmap(w_farmgate_df,title_1)
+            heatmap(w_farmgate_df, 'Farmgate Price', 'White Corn')
             st.header("Retail Price")
-            heatmap(w_retail_df,title_1)
-            st.header("Wholesale Price")
-            heatmap(w_wholesale_df,title_1)
+            heatmap(w_retail_df, 'Retail Price', 'White Corn')
+            st.header("Wholesale Corn Grits Price")
+            heatmap(w_wholesale_df_1, 'Wholesale Price', 'White Corn')
+            st.header("Wholesale Corn Grains Price")
+            heatmap(w_wholesale_df_2, 'Wholesale Price', 'White Corn')
 
         with col2:
             st.header("Yellow Corn")
             st.header("Farmgate Price")
-            heatmap(y_farmgate_df,title_2)
+            heatmap(y_farmgate_df, 'Farmgate Price', 'Yellow Corn')
             st.header("Retail Price")
-            heatmap(y_retail_df,title_2)
-            st.header("Wholesale Price")
-            heatmap(y_wholesale_df,title_2)
+            heatmap(y_retail_df, 'Retail Price', 'Yellow Corn')
+            st.header("Wholesale Corn Grits Price")
+            heatmap(y_wholesale_df_1, 'Wholesale Price', 'Yellow Corn')
+            st.header("Wholesale Corn Grains Price")
+            heatmap(y_wholesale_df_2, 'Wholesale Price', 'Yellow Corn')
 
 
         
