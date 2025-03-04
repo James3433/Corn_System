@@ -430,24 +430,24 @@ def app():
 
                     if st.form_submit_button('Submit to the database'):
                         
-                        # st.session_state.input_data['province_id'] = st.session_state.input_data['province_id'].map(provinces_num)
-                        # st.session_state.input_data['corn_type'] = st.session_state.input_data['corn_type'].map(corn_type)
+                        st.session_state.input_data['province_id'] = st.session_state.input_data['province_id'].map(provinces_num)
+                        st.session_state.input_data['corn_type'] = st.session_state.input_data['corn_type'].map(corn_type)
 
                         if selected_dataset2 == "Fertilizer Price":
-                            # submit_predictions_fertilizer(st.session_state.input_data, user_id)
+                            submit_predictions_fertilizer(st.session_state.input_data, user_id)
                             st.session_state.input_data = fertilizer_database
 
                         elif selected_dataset2 == "Corn Price":
-                            # submit_predictions_price(st.session_state.input_data, user_id, corn_type)
+                            submit_predictions_price(st.session_state.input_data, user_id)
                             st.session_state.input_data = price_database
 
                         elif selected_dataset2 == "Corn Production":
-                            # submit_predictions_production(st.session_state.input_data, user_id, corn_type)
+                            submit_predictions_production(st.session_state.input_data, user_id)
                             st.session_state.input_data = production_database
                             
                         elif selected_dataset2 == "Weather Info":
-                            # st.session_state.input_data['conditions'] = st.session_state.input_data['conditions'].map(conditions_num)
-                            # submit_predictions_weather(st.session_state.input_data, user_id)
+                            st.session_state.input_data['conditions'] = st.session_state.input_data['conditions'].map(conditions_num)
+                            submit_predictions_weather(st.session_state.input_data, user_id)
                             st.session_state.input_data = weather_database
 
 
