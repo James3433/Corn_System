@@ -33,12 +33,23 @@ def app():
     st.markdown(f"""
             <style>
                 [data-testid="stVerticalBlockBorderWrapper"] {{
-                    background-color: #39a300;
-                    border: 2px solid green;
+                    background-color: #5bcd00;
                     width: 100%;
                     height: 110%; 
                     border-radius: 10px;
                     padding: 1% 5%;
+                }}
+
+                .comment_box{{
+                    border-radius: 10px;
+                    background-color: #578809;
+                    padding: 0% 5%
+                }}
+                .comment_box p{{
+                    margin-left: 10px;
+                }}
+                .comment_box st-emotion-cache-asc41u e1nzilvr2 h5{{
+                    padding: 0px;
                 }}
 
                 .user_name{{

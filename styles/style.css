@@ -1,7 +1,8 @@
 
 section.main.st-emotion-cache-bm2z3a.ea3mdgi8{
     /* background-image: url(https://cdn.forumcomm.com/dims4/default/02b8142/2147483647/strip/true/crop/900x600+50+0/resize/840x560!/quality/90/?url=https%3A%2F%2Ffcc-cue-exports-brightspot.s3.us-west-2.amazonaws.com%2Fagweek%2Fbinary%2Fcopy%2Fd8%2F09%2F3a639b90b9fe9b16a0f112246ee7%2F2436185-corn-juliannegentry-istock-binary-4905386.jpg); */
-    background-color:#5aa00a;
+    /* background-color:#5aa00a; */
+    background-color:#70e500;
     background-position-x: center;
     background-position-y: 3em;
     background-size: 100%;
@@ -12,9 +13,11 @@ section.main.st-emotion-cache-bm2z3a.ea3mdgi8{
 
 .st-emotion-cache-6qob1r.eczjsme8 {
     /* background-image: url(https://t4.ftcdn.net/jpg/08/05/28/19/360_F_805281949_CH7sKUKknBeGiKIQ3FttaIgKlnY7buUU.jpg); */
-    background-color:#b6e900;
+    /* background-color:#b6e900; */
+    background-color:#70e500;
     background-position-x: -56em;
     background-size: 501%;
+    border-right: 3px solid green;
 }
 
 

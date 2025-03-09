@@ -20,8 +20,7 @@ def app():
                 [data-testid="stHorizontalBlock"] {{
                     padding: 2em;
                     border-radius: 2em;
-                    background-color: #8edd27;
-                    border: 2px solid green;
+                    background-color: #5bcd00;
                 }}
                 @media (max-width: 768px) {{
                     [data-testid="stHorizontalBlock"] {{
