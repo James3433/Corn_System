@@ -46,7 +46,7 @@ def app():
                     padding: 0% 5%
                 }}
                 .comment_box p{{
-                    margin-left: 10px;
+                    margin-left: 40px;
                 }}
                 .comment_box st-emotion-cache-asc41u e1nzilvr2 h5{{
                     padding: 0px;
