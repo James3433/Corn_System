@@ -1,5 +1,7 @@
 import base64
 import streamlit as st
+import httpx
+
 from supabase_connect import get_user_id, insert_comments, get_all_comments, get_user_name
 
 def app(): 
@@ -10,14 +12,19 @@ def app():
             data = f.read()
         return base64.b64encode(data).decode()
     
-    img_1 = get_img_as_base64("images/user.png")
+    img_1 = get_img_as_base64("images/farmer_PNG.png")
+    img_2 = get_img_as_base64("images/trader_PNG.png")
+    img_3 = get_img_as_base64("images/user.png")
+
 
     fname = st.session_state.get('fname', 'First Name')
     lname = st.session_state.get('lname', 'Last Name')
     user_type = st.session_state.get('user_type', 'User Type')
 
     user_type_num = {1: "Farmer", 2: "Trader", 3: "Consumer", 4: "Admin"}
+    user_type_pic = {1: img_1, 2: img_2, 3: img_3, 4: img_3}
 
+    img = user_type_pic[user_type]
     user_type = user_type_num[user_type]
 
     with open("styles/style.css") as f:
@@ -26,15 +33,14 @@ def app():
     st.markdown(f"""
             <style>
                 [data-testid="stVerticalBlockBorderWrapper"] {{
-                    background-color: #8edd27;;
+                    background-color: #39a300;
+                    border: 2px solid green;
                     width: 100%;
                     height: 110%; 
                     border-radius: 10px;
                     padding: 1% 5%;
                 }}
-                .st-emotion-cache-1h9usn1 {{
-                    background-color: yellowgreen;
-                }}
+
                 .user_name{{
                     display: flex;
                 }}
@@ -47,28 +53,40 @@ def app():
     st.markdown(f"""
             <div class="comments_intro">
                 <div class="user_name">
-                    <img src="data:image/png;base64,{img_1}" alt="A beautiful landscape" width="40px" height="40px">
+                    <img src="data:image/png;base64,{img}" alt="A beautiful landscape" width="40px" height="40px">
                     <h4>{fname} {lname} ({user_type})</h4>
                 </div>
                 <h4>Comments</h4>
             </div>
     """, unsafe_allow_html=True)
 
-    # In your Streamlit app or console
-    comments = get_all_comments()
-    comments_count = len(comments)
+    try:
+        # In your Streamlit app or console
+        comments = get_all_comments()
+        comments_count = len(comments)
+    
+    except httpx.RequestError as e:  # Catch connection & request-related errors
+        st.error("Connection error: Unable to connect to the server. Please try again later.")
+        if st.button("Reload"):
+            st.rerun()
+        st.stop()  # Prevents further execution
 
-    user_type_num = {1: "Farmer", 2: "Trader", 3: "Consumer", 4: "Consumer"}
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {e}")
+        if st.button("Reload"):
+            st.rerun()
+        st.stop()  # Prevents further execution
 
     with st.expander(f"Comments ({comments_count})"):
         if comments and len(comments) > 0:
             for user_id, comments in comments:
                 fname, lname, user_type = get_user_name(user_id)
+                img = user_type_pic[user_type]
                 user_type = user_type_num[user_type]
                 st.markdown(f"""
                 <div class="comment_box">
                     <div class="user_name">
-                        <img src="data:image/png;base64,{img_1}" alt="A beautiful landscape" width="30px" height="30px">
+                        <img src="data:image/png;base64,{img}" alt="A beautiful landscape" width="30px" height="30px">
                         <h5>{fname} {lname} ({user_type})</h5>
                     </div>
                     <p>{comments}</p>
@@ -80,11 +98,28 @@ def app():
     comments = st.text_area(label=" ", placeholder="Write your Comments Here.....")
 
     if st.button("SEND"):
-        user_id = get_user_id(fname, lname)
-        response = insert_comments(user_id, comments)
-        if response.data:  # Successful insertion
-            st.success("Comments added successfully!")
-        elif response.error:
-            st.error("There was an issue")
-    # st.success(f"user_name: {fname} {lname}")
+        try:
+            # Check if comments are empty
+            if not comments.strip():  # Check if comments is empty or only whitespace
+                st.error("Please input comments first.")  # Show error message
+            else:
+                # Proceed to insert comments into the database
+                response = insert_comments(user_id, comments)
+                
+                if response.data:  # Successful insertion
+                    st.success("Comments added successfully!")
+                elif response.error:
+                    st.error("An error occurred while adding your comments.")
+
+        except httpx.RequestError as e:  # Catch connection & request-related errors
+            st.error("Connection error: Unable to connect to the server. Please try again later.")
+            if st.button("Reload"):
+                st.rerun()
+            st.stop()  # Prevents further execution
+
+        except Exception as e:
+            st.error(f"An unexpected error occurred: {e}")
+            if st.button("Reload"):
+                st.rerun()
+            st.stop()  # Prevents further execution
 

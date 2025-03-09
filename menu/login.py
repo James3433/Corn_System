@@ -1,6 +1,7 @@
 import streamlit as st
 import bcrypt
 from supabase_connect import get_user_by_name
+import httpx
 
 def app():
 
@@ -39,11 +40,19 @@ def app():
                 lname, fname = fname_lname.split(', ', 1) 
 
             except ValueError:
-                st.error("Please enter both First Name and Last Name separated by a space.")
+                st.error("Please enter both Last Name Name and First Name separated by a comma and a space.")
                 return
 
             # Get user by first name and last name
-            user = get_user_by_name(fname, lname)
+            try:
+                user = get_user_by_name(fname, lname)
+            except httpx.ConnectError as e:
+                st.error(f"Connection error: Unable to connect to the server. Please try again later.")
+                return
+            except Exception as e:
+                st.error(f"An unexpected error occurred: {e}")
+                return
+
             if not user:
                 st.error("User not found. Please check your username.")
                 return
@@ -62,3 +71,4 @@ def app():
                 st.rerun()
             else:
                 st.error("Invalid password. Please try again.")
+

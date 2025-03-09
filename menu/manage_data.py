@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import joblib
+import httpx
 
 from supabase_connect import get_user_name, get_user_by_user_type
 from supabase_connect import get_fertilizer_data, get_weather_data, get_white_corn_price_data, get_yellow_corn_price_data, get_white_corn_production_data, get_yellow_corn_production_data
@@ -25,6 +26,7 @@ def app():
 
     with open("styles/style.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
 
     # Month mapping dictionary
     month_mapping = {
@@ -70,7 +72,7 @@ def app():
 
 
     if "selected_dataset2_num" not in st.session_state:
-        st.session_state.selected_dataset2_num = 0
+        st.session_state.selected_dataset2_num = 4
 
 
     
@@ -83,22 +85,37 @@ def app():
     st.session_state.selected_dataset2_prev = selected_dataset2
 
 
-
-    
-    if selected_dataset2 == "Fertilizer Price":
-        response_1 = get_fertilizer_data()
+    # Get dataset from Supabase
+    try:
+        if selected_dataset2 == "Fertilizer Price":
+            response_1 = get_fertilizer_data()
+            
+        elif selected_dataset2 == "Corn Price":
+            response_1 = get_white_corn_price_data()
+            response_2 = get_yellow_corn_price_data()      
         
-    elif selected_dataset2 == "Corn Price":
-        response_1 = get_white_corn_price_data()
-        response_2 = get_yellow_corn_price_data()      
-    
-    elif selected_dataset2 == "Corn Production":
-        response_1 = get_white_corn_production_data()
-        response_2 = get_yellow_corn_production_data()
-        
-    elif selected_dataset2 == "Weather Info":
-        response_1 = get_weather_data()
+        elif selected_dataset2 == "Corn Production":
+            response_1 = get_white_corn_production_data()
+            response_2 = get_yellow_corn_production_data()
+            
+        elif selected_dataset2 == "Weather Info":
+            response_1 = get_weather_data()
 
+
+        # The get_users_by_user_type function now returns all users with the specified user_type instead of just the first one.
+        usernames = get_user_by_user_type(4)
+
+    except httpx.RequestError as e:  # Catch connection & request-related errors
+        st.error("Connection error: Unable to connect to the server. Please try again later.")
+        if st.button("Reload"):
+            st.rerun()
+        st.stop()  # Prevents further execution
+
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {e}")
+        if st.button("Reload"):
+            st.rerun()
+        st.stop()  # Prevents further execution
             
 
 
@@ -117,10 +134,6 @@ def app():
         elif selected_dataset2 == "Weather Info":
             st.session_state.input_data = weather_database
 
-
-            
-    # The get_users_by_user_type function now returns all users with the specified user_type instead of just the first one.
-    usernames = get_user_by_user_type(4)
 
 
     # Use a unique key for the form by incrementing it each time the form is submitted.
@@ -282,8 +295,27 @@ def app():
                     conditions = st.selectbox("Condiions:", ['Partly Cloudy', 'Rain, Partially Cloudy', 'Rain, Overcast', 'Overcast'])
 
 
+                
+                col_1, col_2 = st.columns(2)
+
+                with col_1:
+                    if st.session_state.current_prov_index <= len(provinces) - 1:
+                        # Submit button logic (into temprary dataset)
+                        submit_data = st.form_submit_button(f'Submit for {current_prov}')
+                    else:
+                        # Submit button logic (into Database)
+                        sent_data_to_database = st.form_submit_button('Submit to the database')
+                with col_2:
+                    if st.session_state.current_prov_index != 0:
+                        # Get the current province based on the index
+                        current_prov = provinces[st.session_state.current_prov_index -1]
+
+                        # Remove button logic
+                        remove_data = st.form_submit_button(f'Remove {current_prov} data')
+
+
                 if st.session_state.current_prov_index <= len(provinces) - 1:
-                    if st.form_submit_button(f'Submit for {current_prov}'):
+                    if submit_data:
 
                         if selected_dataset2 == "Fertilizer Price":
                             fields = [Ammophos, Ammosul, Complete, Urea]
@@ -427,8 +459,7 @@ def app():
                         st.rerun()  # Rerun to reflect changes
 
                 else:
-
-                    if st.form_submit_button('Submit to the database'):
+                    if sent_data_to_database:
                         
                         # st.session_state.input_data['province_id'] = st.session_state.input_data['province_id'].map(provinces_num)
                         # st.session_state.input_data['corn_type'] = st.session_state.input_data['corn_type'].map(corn_type)
@@ -461,12 +492,8 @@ def app():
                         st.rerun() # Rerun to reflect changes
 
                 if st.session_state.current_prov_index != 0:
-
-                    # Get the current province based on the index
-                    current_prov = provinces[st.session_state.current_prov_index -1]
-
                     # Remove button logic
-                    if st.form_submit_button(f'Remove {current_prov} data'):
+                    if remove_data:
 
                         if not st.session_state.input_data[st.session_state.input_data['province_id'] == current_prov].empty:
                             # Remove entries for the current province
@@ -484,34 +511,90 @@ def app():
                 # Display updated DataFrame again after removal
                 st.dataframe(st.session_state.input_data)
                 
-    else:
-        st.success("Your System is Ready to be train")     
-        st.write("Do you want train the model with the new data or add another?")   
+    else:  
+
+         # Function to hide/show sidebar
+        def toggle_sidebar(state):
+            if state:
+                hide_sidebar = """
+                    <style>
+                        [data-testid="stSidebar"] {display: none;}
+                    </style>
+                """
+                st.markdown(hide_sidebar, unsafe_allow_html=True)
+
+        # Initialize session state for sidebar control
+        if "training" not in st.session_state:
+            st.session_state["training"] = False
+
+        # Initialize session state for refresh control
+        if "refresh_control" not in st.session_state:
+            st.session_state["refresh_control"] = False
+
+        
 
 
-        col_1, col_2 = st.columns(2)
+        toggle_sidebar(st.session_state["training"])
 
-        with col_1:
-            if st.button("Train Data"):
-                st.success("TRAINING MODEL") 
+        # Only show buttons when training is NOT in progress
+        if not st.session_state["training"]:
+            st.success("Your System is Ready to be train")     
+            st.write("Do you want train the model with the new data or add another?") 
 
+            col_1, col_2 = st.columns(2)
+
+            with col_1:
+                train_data = st.button("Train Data")
+
+            with col_2:
+                add_data = st.button("Add More Data")
+
+            # Handle training button
+            if train_data:
+                st.session_state["training"] = True
+                st.rerun()
+
+            # Handle add data button
+            if add_data:
+                st.session_state.form_key = 0
+                st.session_state.current_prov_index = 0
+                st.session_state.selected_dataset2_num = 0
+                st.session_state.input_data = production_database
+                st.rerun()  # Rerun to reflect changes
+
+
+
+        # Simulated training process
+        if st.session_state["training"]:
+
+            if st.session_state["refresh_control"]:
+                st.success("The Model is Fully Trained, Ready to Add More Data!")
+                if st.button("Add More Data"):
+                    st.session_state.form_key = 0
+                    st.session_state.current_prov_index = 0
+                    st.session_state.selected_dataset2_num = 0
+                    st.session_state.input_data = production_database
+                    st.rerun()  # Rerun to reflect changes
+
+            if not st.session_state["refresh_control"]:
+                st.success("Training model...")
 # # ==============================================[BUILD DATASET]=================================================================================   
 
 #                 def build_dataset(province_id, corn_type, dataset1, dataset2, dataset3, dataset4):
-                    
+        
 #                     # Filter datasets based on province_id and corn_type
 #                     filtered_dataset1 = dataset1[(dataset1['province_id'] == province_id) & (dataset1['corn_type'] == corn_type)]
 #                     filtered_dataset2 = dataset2[(dataset2['province_id'] == province_id) & (dataset2['corn_type'] == corn_type)]
 #                     filtered_dataset3 = dataset3[(dataset3['province_id'] == province_id) & (dataset3['corn_type'] == corn_type)]
 #                     filtered_dataset4 = dataset4[(dataset4['province_id'] == province_id) & (dataset4['corn_type'] == corn_type)]
-                    
+        
 #                     # Merge datasets on 'user_id' (or another common key)
 #                     merged_dataset = pd.merge(filtered_dataset1, filtered_dataset2)
 #                     merged_dataset = pd.merge(merged_dataset, filtered_dataset3)
 #                     merged_dataset = pd.merge(merged_dataset, filtered_dataset4)
 #                     # merged_dataset = merged_dataset.drop(['province_id', 'user_id', 'corn_type'], axis=1)
 #                     merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
-                    
+        
 #                     return merged_dataset
 
 
@@ -592,10 +675,10 @@ def app():
 
 
 
-# # ==============================================[RERF PREDICTS]=================================================================================   
+                # # ==============================================[RERF PREDICTS]=================================================================================   
 
                 def extend_predictors(x_train, x_test):
-  
+
                     poly = PolynomialFeatures(degree=2, include_bias=True)
                     x_train = poly.fit_transform(x_train)
                     x_test = poly.transform(x_test)
@@ -621,7 +704,7 @@ def app():
                     # Step 3: Perform k-fold cross-validation for Lasso to find optimal λ 
                     lasso_cv = LassoCV(alphas=np.logspace(-6, 2, 100), cv=5, random_state=0)
                     lasso_cv.fit(x_train, y_train)
-                
+
                     # Get the best alpha (λ)
                     lambda_star = lasso_cv.alpha_
                     
@@ -647,8 +730,8 @@ def app():
                     
                     # Get best parameters for Random Forest
                     best_params_rf = grid_search_rf.best_params_
-                
-                
+
+
                     s_star1 = best_params_rf['min_samples_split']
                     s_star2 = best_params_rf['min_samples_leaf']
                     m_star = best_params_rf['max_features']
@@ -685,23 +768,34 @@ def app():
 
 
 
+                try:
+                    # White Corn Datasets
+                    white_corn_davao_region = get_white_davao_region_dataset()
+                    white_corn_davao_de_oro = get_white_davao_de_oro_dataset()
+                    white_corn_davao_del_norte = get_white_davao_del_norte_dataset()
+                    white_corn_davao_del_sur = get_white_davao_del_sur_dataset()
+                    white_corn_davao_oriental = get_white_davao_oriental_dataset()
+                    white_corn_davao_city = get_white_davao_city_dataset()
 
-                # White Corn Datasets
-                white_corn_davao_region = get_white_davao_region_dataset()
-                white_corn_davao_de_oro = get_white_davao_de_oro_dataset()
-                white_corn_davao_del_norte = get_white_davao_del_norte_dataset()
-                white_corn_davao_del_sur = get_white_davao_del_sur_dataset()
-                white_corn_davao_oriental = get_white_davao_oriental_dataset()
-                white_corn_davao_city = get_white_davao_city_dataset()
+                    # Yellow Corn Datasets
+                    yellow_corn_davao_region = get_yellow_davao_region_dataset()
+                    yellow_corn_davao_de_oro = get_yellow_davao_de_oro_dataset()
+                    yellow_corn_davao_del_norte = get_yellow_davao_del_norte_dataset()
+                    yellow_corn_davao_del_sur = get_yellow_davao_del_sur_dataset()
+                    yellow_corn_davao_oriental = get_yellow_davao_oriental_dataset()
+                    yellow_corn_davao_city = get_yellow_davao_city_dataset()
 
-                # Yellow Corn Datasets
-                yellow_corn_davao_region = get_yellow_davao_region_dataset()
-                yellow_corn_davao_de_oro = get_yellow_davao_de_oro_dataset()
-                yellow_corn_davao_del_norte = get_yellow_davao_del_norte_dataset()
-                yellow_corn_davao_del_sur = get_yellow_davao_del_sur_dataset()
-                yellow_corn_davao_oriental = get_yellow_davao_oriental_dataset()
-                yellow_corn_davao_city = get_yellow_davao_city_dataset()
-                
+                except httpx.RequestError as e:  # Catch connection & request-related errors
+                    st.error("Connection error: Unable to connect to the server. Please try again later.")
+                    if st.button("Reload"):
+                        st.rerun()
+                    st.stop()  # Prevents further execution
+
+                except Exception as e:
+                    st.error(f"An unexpected error occurred: {e}")
+                    if st.button("Reload"):
+                        st.rerun()
+                    st.stop()  # Prevents further execution
 
                 # st.dataframe(white_corn_davao_region)
                 # st.dataframe(white_corn_davao_region_dataset)
@@ -723,7 +817,7 @@ def app():
                             'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
                             'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrits_price',
                             'wholesale_corngrains_price']
-                
+
                 w_w_predictor_2 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
                             'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
                             'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
@@ -750,7 +844,7 @@ def app():
                             'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
                             'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrains_price',
                             'wholesale_corngrains_price']
-                
+
                 y_w_predictor_2 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
                             'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
                             'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
@@ -780,120 +874,119 @@ def app():
                     "davao_city": yellow_corn_davao_city,
                 }
 
-# # ==============================================[WHITE CORN PRICE PREDICTS]=================================================================================   
-                
-                st.write("White Corn Price Train")
-                for dataset_name, dataset in white_province_mapping.items():
+                # # ==============================================[WHITE CORN PRICE PREDICTS]=================================================================================   
 
-                    dataset = dataset.drop(["retail_corngrains_price"], axis=1)
+                col_1, col_2 = st.columns(2)
 
-                    # predict farmgate price for white_davao_region
-                    predict_predictor(dataset, w_f_predictor, "White Corn", "For Farmgate", f"{dataset_name}")
-                
-                    f_X = dataset.drop(['farmgate_corngrains_price'], axis=1)
-                    f_Y = dataset['farmgate_corngrains_price']
-                    f_r2 = RERF_Model(f_X, f_Y, "White Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
+                with col_1:
+                    st.write("White Corn Price Train")
+                    for dataset_name, dataset in white_province_mapping.items():
 
+                        dataset = dataset.drop(["retail_corngrains_price"], axis=1)
 
-
+                        # predict farmgate price for white_davao_region
+                        predict_predictor(dataset, w_f_predictor, "White Corn", "For Farmgate", f"{dataset_name}")
                     
-                    # predict retail price for white_davao_region
-                    predict_predictor(dataset, w_r_predictor, "White Corn", "For Retail",  f"{dataset_name}")
-                
-                    r_X = dataset.drop(['retail_corngrits_price'], axis=1)
-                    r_Y = dataset['retail_corngrits_price']
-                    r_r2 = RERF_Model(r_X, r_Y, "White Corn", "For Retail",  f"{dataset_name}", "retail_corngrits_price") 
+                        f_X = dataset.drop(['farmgate_corngrains_price'], axis=1)
+                        f_Y = dataset['farmgate_corngrains_price']
+                        f_r2 = RERF_Model(f_X, f_Y, "White Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
+
+
+
+                        
+                        # predict retail price for white_davao_region
+                        predict_predictor(dataset, w_r_predictor, "White Corn", "For Retail",  f"{dataset_name}")
+                    
+                        r_X = dataset.drop(['retail_corngrits_price'], axis=1)
+                        r_Y = dataset['retail_corngrits_price']
+                        r_r2 = RERF_Model(r_X, r_Y, "White Corn", "For Retail",  f"{dataset_name}", "retail_corngrits_price") 
 
 
 
 
-                    # predict wholesale corn grits price for white_davao_region
-                    predict_predictor(dataset, w_w_predictor_1, "White Corn", "For Wholesale",  f"{dataset_name}")
-                    print()
-                
-                    w_X_1 = dataset.drop(['wholesale_corngrits_price'], axis=1)
-                    w_Y_1 = dataset['wholesale_corngrits_price']
-                    w_r2_1 = RERF_Model(w_X_1, w_Y_1, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
+                        # predict wholesale corn grits price for white_davao_region
+                        predict_predictor(dataset, w_w_predictor_1, "White Corn", "For Wholesale",  f"{dataset_name}")
+                        print()
+                    
+                        w_X_1 = dataset.drop(['wholesale_corngrits_price'], axis=1)
+                        w_Y_1 = dataset['wholesale_corngrits_price']
+                        w_r2_1 = RERF_Model(w_X_1, w_Y_1, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
+
+
+
+
+
+                        # predict wholesale corn grains price for white_davao_region
+                        predict_predictor(dataset, w_w_predictor_2, "White Corn", "For Wholesale",  f"{dataset_name}")
+                        print()
+                    
+                        w_X_2 = dataset.drop(['wholesale_corngrains_price'], axis=1)
+                        w_Y_2 = dataset['wholesale_corngrains_price']
+                        w_r2_2 = RERF_Model(w_X_2, w_Y_2, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
+
+
+
+                        st.success(f'White Corn {dataset_name} trained successfully!')
+                        st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
+                        st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
+
+
+                # # # ==============================================[YELLOW CORN PRICE PREDICTS]=================================================================================   
+                with col_2:
+                    st.write("Yellow Corn Price Train")
+                    for dataset_name, dataset in yellow_province_mapping.items():
+
+                        dataset = dataset.drop(["retail_corngrits_price"], axis=1)
+
+                        # predict farmgate price for white_davao_region
+                        predict_predictor(dataset, y_f_predictor, "Yellow Corn", "For Farmgate", f"{dataset_name}")
+                    
+                        f_X = dataset.drop(['farmgate_corngrains_price'], axis=1)
+                        f_Y = dataset['farmgate_corngrains_price']
+                        f_r2 = RERF_Model(f_X, f_Y, "Yellow Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
+
+
+
+                        
+                        # predict retail price for white_davao_region
+                        predict_predictor(dataset, y_r_predictor, "Yellow Corn", "For Retail",  f"{dataset_name}")
+
+                        r_X = dataset.drop(['retail_corngrains_price'], axis=1)
+                        r_Y = dataset['retail_corngrains_price']
+                        r_r2 = RERF_Model(r_X, r_Y, "Yellow Corn", "For Retail",  f"{dataset_name}", "retail_corngrains_price") 
+
+
+
+                        # predict wholesale corn grits price for white_davao_region
+                        predict_predictor(dataset, y_w_predictor_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
+                        print()
+                    
+                        w_X_1 = dataset.drop(['wholesale_corngrits_price'], axis=1)
+                        w_Y_1 = dataset['wholesale_corngrits_price']
+                        w_r2_1 = RERF_Model(w_X_1, w_Y_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
+                    
+
+
+
+
+                        # predict wholesale corn grains price for white_davao_region
+                        predict_predictor(dataset, y_w_predictor_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
+                        print()
+                    
+                        w_X_2 = dataset.drop(['wholesale_corngrains_price'], axis=1)
+                        w_Y_2 = dataset['wholesale_corngrains_price']
+                        w_r2_2 = RERF_Model(w_X_2, w_Y_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
+
+
+
+                        st.success(f'Yellow Corn {dataset_name} trained successfully!')
+                        st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
+                        st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
+
+
+                        if dataset_name == "davao_city":
+                            st.session_state["training"] = False  # Re-enable sidebar
+                            st.session_state["refresh_control"] = True # Endable Add More Data Button  
+                            st.rerun() 
+                                
             
-
-
-
-
-                    # predict wholesale corn grains price for white_davao_region
-                    predict_predictor(dataset, w_w_predictor_2, "White Corn", "For Wholesale",  f"{dataset_name}")
-                    print()
-                
-                    w_X_2 = dataset.drop(['wholesale_corngrains_price'], axis=1)
-                    w_Y_2 = dataset['wholesale_corngrains_price']
-                    w_r2_2 = RERF_Model(w_X_2, w_Y_2, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
-
-
-
-                    st.success(f'White Corn {dataset_name} trained successfully!')
-                    st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
-                    st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
-
-
-# # # ==============================================[YELLOW CORN PRICE PREDICTS]=================================================================================   
-                st.write(" ")
-                st.write("Yellow Corn Price Train")
-                for dataset_name, dataset in yellow_province_mapping.items():
-
-                    dataset = dataset.drop(["retail_corngrits_price"], axis=1)
-
-                    # predict farmgate price for white_davao_region
-                    predict_predictor(dataset, y_f_predictor, "Yellow Corn", "For Farmgate", f"{dataset_name}")
-                
-                    f_X = dataset.drop(['farmgate_corngrains_price'], axis=1)
-                    f_Y = dataset['farmgate_corngrains_price']
-                    f_r2 = RERF_Model(f_X, f_Y, "Yellow Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
-
-
-
-                    
-                    # predict retail price for white_davao_region
-                    predict_predictor(dataset, y_r_predictor, "Yellow Corn", "For Retail",  f"{dataset_name}")
-
-                    r_X = dataset.drop(['retail_corngrains_price'], axis=1)
-                    r_Y = dataset['retail_corngrains_price']
-                    r_r2 = RERF_Model(r_X, r_Y, "Yellow Corn", "For Retail",  f"{dataset_name}", "retail_corngrains_price") 
-
-
-
-                    # predict wholesale corn grits price for white_davao_region
-                    predict_predictor(dataset, y_w_predictor_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
-                    print()
-                
-                    w_X_1 = dataset.drop(['wholesale_corngrits_price'], axis=1)
-                    w_Y_1 = dataset['wholesale_corngrits_price']
-                    w_r2_1 = RERF_Model(w_X_1, w_Y_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
-                
-
-
-
-
-                    # predict wholesale corn grains price for white_davao_region
-                    predict_predictor(dataset, y_w_predictor_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
-                    print()
-                
-                    w_X_2 = dataset.drop(['wholesale_corngrains_price'], axis=1)
-                    w_Y_2 = dataset['wholesale_corngrains_price']
-                    w_r2_2 = RERF_Model(w_X_2, w_Y_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
-
-
-
-                    st.success(f'Yellow Corn {dataset_name} trained successfully!')
-                    st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
-                    st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
-
-#                 st.rerun() # Rerun to reflect changes
-    
-        with col_2:
-            if st.button("Add More Data"):
-                st.session_state.form_key = 0
-                st.session_state.current_prov_index = 0
-                st.session_state.selected_dataset2_num = 0
-
-                st.session_state.input_data = production_database
-
-                st.rerun() # Rerun to reflect changes

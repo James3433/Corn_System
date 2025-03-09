@@ -37,6 +37,7 @@ def app():
                 [data-testid="stVerticalBlock"] {{
                     border-radius: 2em;
                     background-color: #8edd27;
+                    border: 2px solid green;
                 }}
 
                 [data-testid="stHorizontalBlock"] {{
@@ -311,12 +312,14 @@ def app():
             xaxis=dict(
                 tickangle=-45,
                 titlefont=dict(size=15, color="black"),  # X-axis title font
-                tickfont=dict(size=12, color="black")    # X-axis tick labels font
+                tickfont=dict(size=12, color="black"),   # X-axis tick labels font
+                fixedrange=True                          # Disable zooming
             ),
 
             yaxis=dict(
                 titlefont=dict(size=15, color="black"),  # Y-axis title font
-                tickfont=dict(size=12, color="black")    # Y-axis tick labels font
+                tickfont=dict(size=12, color="black"),    # Y-axis tick labels font
+                fixedrange=True                          # Disable zooming
             ),
 
             title_font=dict(size=20, color="black"),  # Title font (overrides general font)

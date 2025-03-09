@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
+import httpx
 
 from plotly.subplots import make_subplots
 from supabase_connect import get_corn_price
@@ -20,6 +21,7 @@ def app():
                     padding: 2em;
                     border-radius: 2em;
                     background-color: #8edd27;
+                    border: 2px solid green;
                 }}
                 @media (max-width: 768px) {{
                     [data-testid="stHorizontalBlock"] {{
@@ -42,6 +44,8 @@ def app():
                 # Create subplots - this is crucial for handling multiple traces cleanly
                 fig = make_subplots(specs=[[{"secondary_y": False}]])  # Use secondary_y if needed for different scales
 
+                title = f"Corn Prices in the Year {year}"
+
                 # Define price types based on dataset columns
                 if 'retail_corngrits_price' in dataset.columns:
                     price_types = {
@@ -57,7 +61,8 @@ def app():
                         'wholesale_corngrits_price': 'Wholesale Corn Grits Price',
                         'wholesale_corngrains_price': 'Wholesale Corn Grains Price'
                     }
-                else:
+                else: 
+                    title = f"Wholesale Prices in the Year {year}"
                     price_types = { # Default if none exists
                         'wholesale_corngrits_price': 'Wholesale Price',
                         'wholesale_corngrains_price': 'Wholesale Price'
@@ -80,7 +85,7 @@ def app():
 
                 # Update layout for better appearance
                 fig.update_layout(
-                    title=f"Corn Prices in the Year {year}",
+                    title=title,
                     xaxis_title="Month",
                     yaxis_title="Price",
                     template="plotly_dark",  # Or other base template if you prefer
@@ -98,12 +103,14 @@ def app():
                     xaxis=dict(
                         tickangle=-45,
                         titlefont=dict(size=15, color="black"),  # X-axis title font
-                        tickfont=dict(size=12, color="black")    # X-axis tick labels font
+                        tickfont=dict(size=12, color="black"),   # X-axis tick labels font
+                        fixedrange=True                          # Disable zooming
                     ),
 
                     yaxis=dict(
                         titlefont=dict(size=15, color="black"),  # Y-axis title font
-                        tickfont=dict(size=12, color="black")    # Y-axis tick labels font
+                        tickfont=dict(size=12, color="black"),   # Y-axis tick labels font
+                        fixedrange=True                          # Disable zooming
                     ),
 
                     title_font=dict(size=20, color="black"),  # Title font (overrides general font)
@@ -120,10 +127,15 @@ def app():
                         )
                     )
 
-                # # Rotate x-axis labels for readability
-                # fig.update_xaxes(tickangle=-45)
+                # # Show the figure with customized configuration
+                # fig.show(config={
+                #     'scrollZoom': False,  # Disable scroll zooming
+                #     'doubleClick': False  # Disable double click to zoom
+                # })
 
-                st.plotly_chart(fig, use_container_width=True)
+                # Display the plot in Streamlit
+                st.plotly_chart(fig, use_container_width=True)  # Make the plot responsive
+
 
 
 
@@ -135,18 +147,21 @@ def app():
             grouped = dataset.groupby('year')
 
             for year, group in reversed(list(grouped)):
-                # Create the Plotly Express line plot
-                fig = px.line(group,
-                            x="month",
-                            y="price",
-                            mode='markers+lines',  # Show both markers and lines
-                            marker=dict(size=8), # Adjust marker size
-                            hovertemplate=f"Price: %{{y}}<extra></extra>" # Custom hover
-                        )
-                
+                # Create the Plotly line plot
+                fig = go.Figure(data=[
+                    go.Scatter(
+                        x=group["month"],
+                        y=group["price"],
+                        mode='markers+lines',  # Show both markers and lines
+                        marker=dict(size=8),  # Adjust marker size
+                        hoverinfo='text',  # Use hoverinfo instead of hovertemplate for go.Scatter
+                        hovertext=[f"Price: {price}" for price in group["price"]]
+                    )
+                ])
+
                 # Update layout for better appearance
                 fig.update_layout(
-                    title=f"Corn Prices in the Year {year}",
+                    title=f"{price_data} in the Year {year}",
                     xaxis_title="Month",
                     yaxis_title="Price",
                     template="plotly_dark",  # Or other base template if you prefer
@@ -164,30 +179,29 @@ def app():
                     xaxis=dict(
                         tickangle=-45,
                         titlefont=dict(size=15, color="black"),  # X-axis title font
-                        tickfont=dict(size=12, color="black")    # X-axis tick labels font
+                        tickfont=dict(size=12, color="black"),   # X-axis tick labels font
+                        fixedrange=True                          # Disable zooming
                     ),
 
                     yaxis=dict(
                         titlefont=dict(size=15, color="black"),  # Y-axis title font
-                        tickfont=dict(size=12, color="black")    # Y-axis tick labels font
+                        tickfont=dict(size=12, color="black"),   # Y-axis tick labels font
+                        fixedrange=True                          # Disable zooming
                     ),
 
                     title_font=dict(size=20, color="black"),  # Title font (overrides general font)
 
                     # Customize hover label appearance
                     hoverlabel=dict(
-                            bgcolor="rgba(0, 0, 0, 0.8)",  # Background color (semi-transparent black)
-                            font=dict(
-                                size=14,                  # Font size
-                                family="Arial",           # Font family
-                                color="white"             # Font color
-                            ),
-                            bordercolor="yellow"          # Border color of the tooltip
-                        )
+                        bgcolor="rgba(0, 0, 0, 0.8)",  # Background color (semi-transparent black)
+                        font=dict(
+                            size=14,                  # Font size
+                            family="Arial",           # Font family
+                            color="white"             # Font color
+                        ),
+                        bordercolor="yellow"          # Border color of the tooltip
                     )
-
-                # Rotate x-axis labels for readability
-                fig.update_xaxes(tickangle=-45)
+                )
 
                 # Display the plot in Streamlit
                 st.plotly_chart(fig, use_container_width=True)  # Make the plot responsive
@@ -210,9 +224,20 @@ def app():
     province_id = region_map.get(selected_region)
 
     # Group the data by year based on the selected dataset
-    w_df = get_corn_price(1, province_id)
-    y_df = get_corn_price(2, province_id)
+    try:
+        w_df = get_corn_price(1, province_id)
+        y_df = get_corn_price(2, province_id)
+    except httpx.RequestError as e:  # Catch connection & request-related errors
+        st.error("Connection error: Unable to connect to the server. Please try again later.")
+        if st.button("Reload"):
+            st.rerun()
+        st.stop()  # Prevents further execution
 
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {e}")
+        if st.button("Reload"):
+            st.rerun()
+        st.stop()  # Prevents further execution
 
     w_df.drop(['retail_corngrains_price'], axis=1, inplace=True)
     y_df.drop(['retail_corngrits_price'], axis=1, inplace=True)
