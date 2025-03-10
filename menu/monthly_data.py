@@ -80,7 +80,7 @@ def app():
                                 hovertemplate=f"Type: {label}<br>Price: %{{y}}<extra></extra>", # Custom hover
 
                                 # Add text labels
-                                font=dict(
+                                textfont=dict(
                                     family="Arial",  # Specify font family
                                     size=15,        # Overall font size
                                     color="black"    # Overall font color
@@ -99,7 +99,7 @@ def app():
                     plot_bgcolor='#B7E505',  # Yellow-Green for plot area
                     paper_bgcolor='#B7E505',  # Yellow-Green for surrounding paper
 
-                    textfont=dict(
+                    font=dict(
                         family="Arial",  # Specify font family
                         size=15,        # Overall font size
                         color="black"    # Overall font color
