@@ -293,46 +293,48 @@ def app():
         # Update layout
         fig.update_layout(
             title=f'{selected_dataset} Price Data in {num_rows} Months',
-            xaxis_title="Month",
-            yaxis_title="Price",
-            template="plotly_white", # Or your preferred template
-            hovermode="x unified",
-            title_x=0.5,
-            plot_bgcolor='#B7E505',  # Yellow-Green for plot area
-            paper_bgcolor='#B7E505',  # Yellow-Green for surrounding paper
+            title_x=0.05,  # Position the title at the left
+            title_xanchor='left',  # Align the title to the left
+            template="plotly_dark",  
+            hovermode="x unified",  
+            plot_bgcolor='#B7E505',  
+            paper_bgcolor='#B7E505',  
 
             font=dict(
-                family="Arial",  # Specify font family
-                size=15,        # Overall font size
-                color="black"    # Overall font color
+                family="Arial",  
+                size=15,        
+                color="black"    
             ),
+        )
 
-            xaxis=dict(
-                tickangle=-45,
-                titlefont=dict(size=15, color="black"),  # X-axis title font
-                tickfont=dict(size=12, color="black"),    # X-axis tick labels font
-                fixedrange=True                          # Disable zooming
-            ),
+        # Update axis title fonts and tick fonts
+        fig.update_xaxes(
+            tickangle=-45,
+            title_text="Month",  
+            title_font=dict(size=15, color="black"),  
+            tickfont=dict(size=12, color="black"),   
+            fixedrange=True                          
+        )
 
-            yaxis=dict(
-                titlefont=dict(size=15, color="black"),  # Y-axis title font
-                tickfont=dict(size=12, color="black"),   # Y-axis tick labels font
-                fixedrange=True                          # Disable zooming
-            ),
+        fig.update_yaxes(
+            title_text="Price",  
+            title_font=dict(size=15, color="black"),  
+            tickfont=dict(size=12, color="black"),   
+            fixedrange=True                          
+        )
 
-            title_font=dict(size=20, color="black"),  # Title font (overrides general font)
-            
-            # Customize hover label appearance
+        # Customize hover label appearance
+        fig.update_layout(
             hoverlabel=dict(
-                    bgcolor="rgba(0, 0, 0, 0.8)",  # Background color (semi-transparent black)
-                    font=dict(
-                        size=14,                  # Font size
-                        family="Arial",           # Font family
-                        color="white"             # Font color
-                    ),
-                    bordercolor="yellow"          # Border color of the tooltip
-                )
+                bgcolor="rgba(0, 0, 0, 0.8)",  
+                font=dict(
+                    size=14,                  
+                    family="Arial",           
+                    color="white"             
+                ),
+                bordercolor="yellow"          
             )
+        )
 
         st.plotly_chart(fig, use_container_width=True)
 
