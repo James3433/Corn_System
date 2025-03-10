@@ -162,6 +162,8 @@ def app():
                     title=f"{price_data} in the Year {year}",
                     title_x=0.05,  # Position title at the far left
                     title_xanchor='left',  # Anchor title to the left
+                    title_x=0.05,  # Position title at the far left
+                    title_xanchor='left',  # Anchor title to the left
                     template="plotly_dark",  # Or other base template if you prefer
                     hovermode="x unified",
                     plot_bgcolor='#B7E505',  # Yellow-Green for plot area
