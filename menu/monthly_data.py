@@ -98,8 +98,34 @@ def app():
                         color="black"    # Overall font color
                     ),
 
-                    title_font=dict(size=20, color="black")  # Title font (overrides general font)
+                    xaxis=dict(
+                        tickangle=-45,
+                        titlefont=dict(size=15, color="black"), # X-axis title font
+                        tickfont=dict(size=12, color="black"), # X-axis tick labels font
+                        fixedrange=True # Disable zooming
+                    ),
+
+                    yaxis=dict(
+                        titlefont=dict(size=15, color="black"), # Y-axis title font
+                        tickfont=dict(size=12, color="black"), # Y-axis tick labels font
+                        fixedrange=True # Disable zooming
+                    ),
+
+                    title_font=dict(size=20, color="black"), # Title font (overrides general font)
+
+                    # Customize hover label appearance
+                        hoverlabel=dict(
+                            bgcolor="rgba(0, 0, 0, 0.8)", # Background color (semi-transparent black)
+                            font=dict(
+                            size=14, # Font size
+                            family="Arial", # Font family
+                            color="white" # Font color
+                        ),
+                        bordercolor="yellow" # Border color of the tooltip
+                    )
                 )
+
+
 
                 # Update x-axis properties
                 fig.update_xaxes(
@@ -173,38 +199,63 @@ def app():
                         color="black"    # Overall font color
                     ),
 
-                    title_font=dict(size=20, color="black")  # Title font (overrides general font)
-                )
+                    xaxis=dict(
+                        tickangle=-45,
+                        titlefont=dict(size=15, color="black"), # X-axis title font
+                        tickfont=dict(size=12, color="black"), # X-axis tick labels font
+                        fixedrange=True # Disable zooming
+                    ),
 
-                # Update x-axis properties
-                fig.update_xaxes(
-                    title="Month",
-                    tickangle=-45,
-                    titlefont=dict(size=15, color="black"),  # X-axis title font
-                    tickfont=dict(size=12, color="black"),   # X-axis tick labels font
-                    fixedrange=True                            # Disable zooming
-                )
+                    yaxis=dict(
+                        titlefont=dict(size=15, color="black"), # Y-axis title font
+                        tickfont=dict(size=12, color="black"), # Y-axis tick labels font
+                        fixedrange=True # Disable zooming
+                    ),
 
-                # Update y-axis properties
-                fig.update_yaxes(
-                    title="Price",
-                    titlefont=dict(size=15, color="black"),  # Y-axis title font
-                    tickfont=dict(size=12, color="black"),   # Y-axis tick labels font
-                    fixedrange=True                            # Disable zooming
-                )
+                    title_font=dict(size=20, color="black"), # Title font (overrides general font)
 
-                # Customize hover label appearance
-                fig.update_traces(
-                    hoverlabel=dict(
-                        bgcolor="rgba(0, 0, 0, 0.8)",  # Background color (semi-transparent black)
-                        font=dict(
-                            size=14,                  # Font size
-                            family="Arial",           # Font family
-                            color="white"             # Font color
+                    # Customize hover label appearance
+                        hoverlabel=dict(
+                            bgcolor="rgba(0, 0, 0, 0.8)", # Background color (semi-transparent black)
+                            font=dict(
+                            size=14, # Font size
+                            family="Arial", # Font family
+                            color="white" # Font color
                         ),
-                        bordercolor="yellow"          # Border color of the tooltip
+                        bordercolor="yellow" # Border color of the tooltip
                     )
                 )
+
+
+                # # Update x-axis properties
+                # fig.update_xaxes(
+                #     title="Month",
+                #     tickangle=-45,
+                #     titlefont=dict(size=15, color="black"),  # X-axis title font
+                #     tickfont=dict(size=12, color="black"),   # X-axis tick labels font
+                #     fixedrange=True                            # Disable zooming
+                # )
+
+                # # Update y-axis properties
+                # fig.update_yaxes(
+                #     title="Price",
+                #     titlefont=dict(size=15, color="black"),  # Y-axis title font
+                #     tickfont=dict(size=12, color="black"),   # Y-axis tick labels font
+                #     fixedrange=True                            # Disable zooming
+                # )
+
+                # # Customize hover label appearance
+                # fig.update_traces(
+                #     hoverlabel=dict(
+                #         bgcolor="rgba(0, 0, 0, 0.8)",  # Background color (semi-transparent black)
+                #         font=dict(
+                #             size=14,                  # Font size
+                #             family="Arial",           # Font family
+                #             color="white"             # Font color
+                #         ),
+                #         bordercolor="yellow"          # Border color of the tooltip
+                #     )
+                # )
 
                 # Display the plot in Streamlit
                 st.plotly_chart(fig, use_container_width=True)  # Make the plot responsive
