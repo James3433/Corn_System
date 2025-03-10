@@ -290,7 +290,7 @@ def app():
                     hovertemplate=f"Type: {price_type.replace('_', ' ').title()}<br>Price: %{{y}}<extra></extra>",
 
                     # Add text labels
-                    font=dict(
+                    textfont=dict(
                         family="Arial",  # Specify font family
                         size=15,        # Overall font size
                         color="black"    # Overall font color

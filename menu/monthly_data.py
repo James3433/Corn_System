@@ -99,7 +99,7 @@ def app():
                     plot_bgcolor='#B7E505',  # Yellow-Green for plot area
                     paper_bgcolor='#B7E505',  # Yellow-Green for surrounding paper
 
-                    font=dict(
+                    textfont=dict(
                         family="Arial",  # Specify font family
                         size=15,        # Overall font size
                         color="black"    # Overall font color
@@ -189,7 +189,7 @@ def app():
                         hovertext=[f"Price: {price}" for price in group["price"]],
                        
                         # Add text labels
-                        font=dict(
+                        textfont=dict(
                             family="Arial",  # Specify font family
                             size=15,        # Overall font size
                             color="black"    # Overall font color
