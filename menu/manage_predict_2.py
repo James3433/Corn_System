@@ -287,7 +287,14 @@ def app():
                     y=dataset[price_type],
                     mode='markers+lines',
                     name=price_type.replace('_', ' ').title(),
-                    hovertemplate=f"Type: {price_type.replace('_', ' ').title()}<br>Price: %{{y}}<extra></extra>"
+                    hovertemplate=f"Type: {price_type.replace('_', ' ').title()}<br>Price: %{{y}}<extra></extra>",
+
+                    # Add text labels
+                    font=dict(
+                        family="Arial",  # Specify font family
+                        size=15,        # Overall font size
+                        color="black"    # Overall font color
+                    )
                 ))
 
         # Update layout
