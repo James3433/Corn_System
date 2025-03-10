@@ -308,13 +308,13 @@ def app():
 
             xaxis=dict(
                 tickangle=-45,
-                titlefont=dict(size=15, color="black"), # X-axis title font
+                title_font=dict(size=15, color="black"),  # Correct property
                 tickfont=dict(size=12, color="black"), # X-axis tick labels font
                 fixedrange=True # Disable zooming
             ),
 
             yaxis=dict(
-                titlefont=dict(size=15, color="black"), # Y-axis title font
+                title_font=dict(size=15, color="black"),  # Correct property
                 tickfont=dict(size=12, color="black"), # Y-axis tick labels font
                 fixedrange=True # Disable zooming
             ),
