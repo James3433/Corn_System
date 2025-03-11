@@ -28,6 +28,7 @@ def app():
             <style>
                 [data-testid="stVerticalBlockBorderWrapper"] {{
                     background-color: #8edd27;
+                    border: 2px solid green;
                     width: 100%;
                     height: 110%; 
                     border-radius: 10px;

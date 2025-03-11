@@ -17,11 +17,16 @@ def app():
 
     st.markdown(f"""
             <style>
-                [data-testid="stHorizontalBlock"] {{
-                    padding: 2em;
+                [data-testid="stVerticalBlock"] {{
                     border-radius: 2em;
                     background-color: #5bcd00;
+                    padding: 0px 0px 30px 0px;
                 }}
+
+                [data-testid="stHorizontalBlock"] {{
+                    padding: 2em;
+                }}
+
                 @media (max-width: 768px) {{
                     [data-testid="stHorizontalBlock"] {{
                         padding: 1em 0em 1em 1em;
@@ -77,14 +82,8 @@ def app():
                                 mode='markers+lines',  # Show both markers and lines
                                 name=label,
                                 marker=dict(size=8), # Adjust marker size
-                                hovertemplate=f"<span style='color:black;'>Type: {label}</span><br><span style='color:black;'>Price: %{{y}}</span><extra></extra>",  # Custom hover 
+                                hovertemplate=f"Type: {label}</span><br>Price: %{{y}}<extra></extra>",  # Custom hover 
 
-                                # Add text labels
-                                textfont=dict(
-                                    family="Arial",  # Specify font family
-                                    size=15,        # Overall font size
-                                    color="black"    # Overall font color
-                                )
                             ),
                             secondary_y=False, #Important
                         )
@@ -99,10 +98,11 @@ def app():
                     plot_bgcolor='#B7E505',  # Yellow-Green for plot area
                     paper_bgcolor='#B7E505',  # Yellow-Green for surrounding paper
 
-                    font=dict(
-                        family="Arial",  # Specify font family
-                        size=15,        # Overall font size
-                        color="black"    # Overall font color
+                    legend=dict(
+                        font=dict(
+                            family="Arial",  # Specify font family
+                            color="black"    # Overall font color
+                        )
                     ),
 
                     xaxis=dict(
@@ -186,14 +186,8 @@ def app():
                         mode='markers+lines',  # Show both markers and lines
                         marker=dict(size=8),  # Adjust marker size
                         hoverinfo='text',  # Use hoverinfo instead of hovertemplate for go.Scatter
-                        hovertemplate=f"<span style='color:black;'>Type: {label}</span><br><span style='color:black;'>Price: %{{y}}</span><extra></extra>",
+                        hovertext=[f"Price: {price}" for price in group["price"]],
                        
-                        # Add text labels
-                        textfont=dict(
-                            family="Arial",  # Specify font family
-                            size=15,        # Overall font size
-                            color="black"    # Overall font color
-                        )
                     )
                 ])
 
@@ -207,10 +201,11 @@ def app():
                     plot_bgcolor='#B7E505',  # Yellow-Green for plot area
                     paper_bgcolor='#B7E505',  # Yellow-Green for surrounding paper
 
-                    font=dict(
-                        family="Arial",  # Specify font family
-                        size=15,        # Overall font size
-                        color="black"    # Overall font color
+                    legend=dict(
+                        font=dict(
+                            family="Arial",  # Specify font family
+                            color="black"    # Overall font color
+                        )
                     ),
 
                     xaxis=dict(

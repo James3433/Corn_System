@@ -37,6 +37,7 @@ def app():
                 [data-testid="stVerticalBlock"] {{
                     border-radius: 2em;
                     background-color: #5bcd00;
+                    padding: 0px 0px 30px 0px;
                 }}
 
                 [data-testid="stHorizontalBlock"] {{
@@ -280,14 +281,8 @@ def app():
                         y=dataset[price_types],
                         mode='markers+lines',
                         name=price_type.replace('_', ' ').title(),
-                                            hovertemplate=f"<span style='color:black;'>Type: {price_type.replace('_', ' ').title()}</span><br><span style='color:black;'>Price: %{{y}}</span><extra></extra>",
+                        hovertemplate=f"Type: {price_type.replace('_', ' ').title()}<br>Price: %{{y}}<extra></extra>",
 
-                        # Add text labels
-                        textfont=dict(
-                            family="Arial",  # Specify font family
-                            size=15,        # Overall font size
-                            color="black"    # Overall font color
-                        )
                     ))
         else:
             fig.add_trace(go.Scatter(
@@ -308,10 +303,11 @@ def app():
             plot_bgcolor='#B7E505',  # Yellow-Green for plot area
             paper_bgcolor='#B7E505',  # Yellow-Green for surrounding paper
 
-            font=dict(
-                family="Arial",  # Specify font family
-                size=15,        # Overall font size
-                color="black"    # Overall font color
+            legend=dict(
+                font=dict(
+                    family="Arial",  # Specify font family
+                    color="black"    # Overall font color
+                )
             ),
 
             xaxis=dict(
@@ -327,7 +323,7 @@ def app():
                 fixedrange=True # Disable zooming
             ),
 
-            title_font=dict(size=20, color="black"), # Title font (overrides general font)
+            title_font=dict(color="black"), # Title font (overrides general font)
 
             # Customize hover label appearance
                 hoverlabel=dict(
@@ -468,8 +464,15 @@ def app():
         else:
             default_index = 0  # Fallback to first month if last_month is invalid
 
-        # Collect user inputs
-        Month = st.selectbox("Month", month_names, index=default_index)
+
+
+        col_1, col_2 = st.columns(2)
+
+        with col_1:
+            # Collect user inputs
+            Month = st.selectbox("Month", month_names, index=default_index)
+
+
 
         # Determine the default year based on the selected month
         selected_month_num = month_mapping_1[Month]
@@ -489,8 +492,11 @@ def app():
         if Year not in year_option_list:
             year_option_list.append(Year)  # Add Year to options if it's not already present
 
-        # Select Year with default index based on Year variable
-        Year = st.selectbox("Select Year", sorted(year_option_list), index=year_option_list.index(Year))
+
+        with col_2:
+            # Select Year with default index based on Year variable
+            Year = st.selectbox("Select Year", sorted(year_option_list), index=year_option_list.index(Year))
+
 
         # Filter predictions_df based on user inputs
         white_filtered_data = white_prediction_df[(white_prediction_df['month'] == selected_month_num) & (white_prediction_df['year'] == Year)]
@@ -509,7 +515,7 @@ def app():
             price_type = "Wholesale Price"
             price_type_1 = "Wholesale Price"
 
-        col1, col2 = st.columns((2))
+        col1, col2 = st.columns(2)
         with col1:
             st.header(f"White Corn {price_type}")
             heatmap(white_filtered_data, price_type, "White Corn")

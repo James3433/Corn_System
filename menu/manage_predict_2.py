@@ -33,8 +33,8 @@ def app():
             <style>
                 [data-testid="stVerticalBlock"] {{
                     border-radius: 2em;
-                    background-color: #8edd27;
-                    border: 2px solid green;
+                    background-color: #5bcd00;
+                    padding: 0px 0px 30px 0px;
                 }}
 
                 [data-testid="stHorizontalBlock"] {{
@@ -289,13 +289,8 @@ def app():
                     name=price_type.replace('_', ' ').title(),
                     hovertemplate=f"Type: {price_type.replace('_', ' ').title()}<br>Price: %{{y}}<extra></extra>",
 
-                    # Add text labels
-                    textfont=dict(
-                        family="Arial",  # Specify font family
-                        size=15,        # Overall font size
-                        color="black"    # Overall font color
                     )
-                ))
+                )
 
         # Update layout
         fig.update_layout(
@@ -307,11 +302,17 @@ def app():
             plot_bgcolor='#B7E505',  # Yellow-Green for plot area
             paper_bgcolor='#B7E505',  # Yellow-Green for surrounding paper
 
-            font=dict(
-                family="Arial",  # Specify font family
-                size=15,        # Overall font size
-                color="black"    # Overall font color
+            legend=dict(
+                font=dict(
+                    family="Arial",  # Specify font family
+                    color="black"    # Overall font color
+                )
             ),
+
+            # font=dict(
+            #     family="Arial",  # Specify font family
+            #     color="black"    # Overall font color
+            # ),
 
             xaxis=dict(
                 tickangle=-45,
@@ -326,17 +327,17 @@ def app():
                 fixedrange=True # Disable zooming
             ),
 
-            title_font=dict(size=20, color="black"), # Title font (overrides general font)
+            title_font=dict(color="black"), # Title font (overrides general font)
 
             # Customize hover label appearance
-                hoverlabel=dict(
-                    bgcolor="rgba(0, 0, 0, 0.8)", # Background color (semi-transparent black)
-                    font=dict(
-                    size=14, # Font size
-                    family="Arial", # Font family
-                    color="white" # Font color
-                ),
-                bordercolor="yellow" # Border color of the tooltip
+            hoverlabel=dict(
+                bgcolor="rgba(0, 0, 0, 0.8)", # Background color (semi-transparent black)
+                font=dict(
+                size=14, # Font size
+                family="Arial", # Font family
+                color="white" # Font color
+            ),
+            bordercolor="yellow" # Border color of the tooltip
             )
         )
 
@@ -409,7 +410,7 @@ def app():
         if selected_year == "2 Year":
             year = 24  # Overwrite default only if button is pressed
 
-        with st.expander("White Predictions Plots"):
+        with st.expander("White Predictions Graph Plots"):
             predictions_df = prediction_dataset(province_configs, selected_dataset, "White Corn")
 
             for province_name, config in province_configs.items():
@@ -420,7 +421,7 @@ def app():
 
 
         
-        with st.expander("Yellow Predictions Plots"):
+        with st.expander("Yellow Predictions Graph Plots"):
             predictions_df = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
 
             for province_name, config in province_configs.items():
@@ -446,6 +447,9 @@ def app():
         white_prediction_df = prediction_dataset(province_configs, selected_dataset, "White Corn")
         yellow_prediction_df = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
         
+        # st.dataframe(white_prediction_df)
+        # st.dataframe(yellow_prediction_df)
+
 
         # Reverse the dictionary
         month_mapping_2 = {v: k for k, v in month_mapping_1.items()}
@@ -462,8 +466,13 @@ def app():
         else:
             default_index = 0  # Fallback to first month if last_month is invalid
 
-        # Collect user inputs
-        Month = st.selectbox("Month", month_names, index=default_index)
+
+
+        col_1, col_2 = st.columns(2)
+
+        with col_1:
+            # Collect user inputs
+            Month = st.selectbox("Month", month_names, index=default_index)
 
         # Determine the default year based on the selected month
         selected_month_num = month_mapping_1[Month]
@@ -483,8 +492,11 @@ def app():
         if Year not in year_option_list:
             year_option_list.append(Year)  # Add Year to options if it's not already present
 
-        # Select Year with default index based on Year variable
-        Year = st.selectbox("Select Year", sorted(year_option_list), index=year_option_list.index(Year))
+
+
+        with col_2:
+            # Select Year with default index based on Year variable
+            Year = st.selectbox("Select Year", sorted(year_option_list), index=year_option_list.index(Year))
 
         # Filter predictions_df based on user inputs
         white_filtered_data = white_prediction_df[(white_prediction_df['month'] == selected_month_num) & (white_prediction_df['year'] == Year)]
@@ -495,7 +507,7 @@ def app():
         yellow_filtered_data['province'] = yellow_filtered_data['province_id'].map(lambda x: province_list[x - 1] if x - 1 < len(province_list) else None) 
 
         w_farmgate_df = white_filtered_data[['province', 'farmgate_corngrains_price']]
-        w_retail_df = white_filtered_data[['province', 'retail_price']]
+        w_retail_df = white_filtered_data[['province', 'retail_corngrits_price']]
         w_wholesale_df_1 = white_filtered_data[['province', 'wholesale_corngrits_price']]
         w_wholesale_df_2 = white_filtered_data[['province', 'wholesale_corngrains_price']]
 
@@ -508,26 +520,26 @@ def app():
 
         col1, col2 = st.columns((2))
         with col1:
-            st.header("White Corn")
-            st.header("Farmgate Price")
-            heatmap(w_farmgate_df, 'Farmgate Price', 'White Corn')
-            st.header("Retail Price")
-            heatmap(w_retail_df, 'Retail Price', 'White Corn')
-            st.header("Wholesale Corn Grits Price")
-            heatmap(w_wholesale_df_1, 'Wholesale Price', 'White Corn')
-            st.header("Wholesale Corn Grains Price")
-            heatmap(w_wholesale_df_2, 'Wholesale Price', 'White Corn')
+            with st.expander("White Predictions Heat Map"):
+                st.subheader("Farmgate Price")
+                heatmap(w_farmgate_df, 'Farmgate Price', 'White Corn')
+                st.subheader("Retail Price")
+                heatmap(w_retail_df, 'Retail Price', 'White Corn')
+                st.subheader("Wholesale Corn Grits Price")
+                heatmap(w_wholesale_df_1, 'Wholesale Price', 'White Corn')
+                st.subheader("Wholesale Corn Grains Price")
+                heatmap(w_wholesale_df_2, 'Wholesale Price', 'White Corn')
 
         with col2:
-            st.header("Yellow Corn")
-            st.header("Farmgate Price")
-            heatmap(y_farmgate_df, 'Farmgate Price', 'Yellow Corn')
-            st.header("Retail Price")
-            heatmap(y_retail_df, 'Retail Price', 'Yellow Corn')
-            st.header("Wholesale Corn Grits Price")
-            heatmap(y_wholesale_df_1, 'Wholesale Price', 'Yellow Corn')
-            st.header("Wholesale Corn Grains Price")
-            heatmap(y_wholesale_df_2, 'Wholesale Price', 'Yellow Corn')
+            with st.expander("Yellow Predictions Heat Map"):
+                st.subheader("Farmgate Price")
+                heatmap(y_farmgate_df, 'Farmgate Price', 'Yellow Corn')
+                st.subheader("Retail Price")
+                heatmap(y_retail_df, 'Retail Price', 'Yellow Corn')
+                st.subheader("Wholesale Corn Grits Price")
+                heatmap(y_wholesale_df_1, 'Wholesale Price', 'Yellow Corn')
+                st.subheader("Wholesale Corn Grains Price")
+                heatmap(y_wholesale_df_2, 'Wholesale Price', 'Yellow Corn')
 
 
         
