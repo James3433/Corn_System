@@ -82,7 +82,7 @@ def app():
                                 mode='markers+lines',  # Show both markers and lines
                                 name=label,
                                 marker=dict(size=8), # Adjust marker size
-                                hovertemplate=f"Type: {label}</span><br>Price: %{{y}}<extra></extra>",  # Custom hover 
+                                hovertemplate=f"Type: {label}</span><br>Price: %{{y}}<extra></extra>"  # Custom hover 
 
                             ),
                             secondary_y=False, #Important
@@ -186,7 +186,7 @@ def app():
                         mode='markers+lines',  # Show both markers and lines
                         marker=dict(size=8),  # Adjust marker size
                         hoverinfo='text',  # Use hoverinfo instead of hovertemplate for go.Scatter
-                        hovertext=[f"Price: {price}" for price in group["price"]],
+                        hovertext=[f"Price: {price}" for price in group["price"]]
                        
                     )
                 ])
