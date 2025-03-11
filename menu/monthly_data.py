@@ -68,8 +68,8 @@ def app():
                 else: 
                     title = f"Wholesale Prices in the Year {year}"
                     price_types = { # Default if none exists
-                        'wholesale_corngrits_price': 'Wholesale Price',
-                        'wholesale_corngrains_price': 'Wholesale Price'
+                        'wholesale_corngrits_price': 'Wholesale Corn Grits Price',
+                        'wholesale_corngrains_price': 'Wholesale Corn Grains Price'
                     }
 
                 # Plot each price type

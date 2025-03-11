@@ -280,8 +280,8 @@ def app():
                         x=dataset['Month Year'],
                         y=dataset[price_types],
                         mode='markers+lines',
-                        name=price_type.replace('_', ' ').title(),
-                        hovertemplate=f"Type: {price_type.replace('_', ' ').title()}<br>Price: %{{y}}<extra></extra>",
+                        name=price_types.replace('_', ' ').title(),
+                        hovertemplate=f"Type: {price_types.replace('_', ' ').title()}<br>Price: %{{y}}<extra></extra>",
 
                     ))
         else:
