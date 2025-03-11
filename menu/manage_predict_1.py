@@ -414,6 +414,8 @@ def app():
         with st.expander("White Predictions Plots"):
             predictions_df, price_type = prediction_dataset(province_configs, selected_dataset, "White Corn")
 
+            # st.dataframe(predictions_df)
+
             for province_name, config in province_configs.items():
                 province_id = config['province_id']
                 predictions_df_1 = predictions_df[predictions_df['province_id'] == province_id]
@@ -425,6 +427,8 @@ def app():
         
         with st.expander("Yellow Predictions Plots"):
             predictions_df, price_type = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
+
+            # st.dataframe(predictions_df)
 
             for province_name, config in province_configs.items():
                 province_id = config['province_id']
@@ -448,6 +452,10 @@ def app():
         white_prediction_df, price_type = prediction_dataset(province_configs, selected_dataset, "White Corn")
         yellow_prediction_df, price_type = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
         
+
+        # st.dataframe(white_prediction_df)
+        # st.dataframe(yellow_prediction_df)
+
 
         # Reverse the dictionary
         month_mapping_2 = {v: k for k, v in month_mapping_1.items()}
@@ -506,28 +514,48 @@ def app():
         white_filtered_data['province'] = white_filtered_data['province_id'].map(lambda x: province_list[x - 1] if x - 1 < len(province_list) else None)        
         yellow_filtered_data['province'] = yellow_filtered_data['province_id'].map(lambda x: province_list[x - 1] if x - 1 < len(province_list) else None) 
 
+        # st.dataframe(white_filtered_data)
+        # st.dataframe(yellow_filtered_data)
 
         if user_type == 1: 
             price_type = "Farmgate Price"
         if user_type == 3: 
             price_type = "Retail Price"
         if user_type == 2: 
-            price_type = "Wholesale Price"
-            price_type_1 = "Wholesale Price"
+            white_filtered_data_1 = white_filtered_data.drop(["wholesale_corngrains_price"], axis=1)
+            white_filtered_data_2 = white_filtered_data.drop(["wholesale_corngrits_price"], axis=1)
+
+            yellow_filtered_data_1 = yellow_filtered_data.drop(["wholesale_corngrains_price"], axis=1)
+            yellow_filtered_data_2 = yellow_filtered_data.drop(["wholesale_corngrits_price"], axis=1)
+
+            price_type_1 = "Wholesale Corn Grits Price"
+            price_type_2 = "Wholesale Corn Grains Price"
+
+
 
         col1, col2 = st.columns(2)
         with col1:
-            st.header(f"White Corn {price_type}")
-            heatmap(white_filtered_data, price_type, "White Corn")
+            if user_type == 2: 
+                with st.expander("White Predictions Heat Map"):
+                    st.subheader(f"{price_type_1}")
+                    heatmap(white_filtered_data_1, price_type_1, "White Corn")
 
-            if user_type == 3: 
-                heatmap(white_filtered_data, price_type_1, "White Corn")
+                    st.subheader(f"{price_type_2}")
+                    heatmap(white_filtered_data_2, price_type_2, "White Corn")
+            else:
+                st.header(f"White Corn {price_type}")
+                heatmap(white_filtered_data, price_type, "White Corn")
 
         with col2:
-            st.header(f"Yellow Corn {price_type}")
-            heatmap(yellow_filtered_data, price_type, "Yellow Corn")
+            if user_type == 2: 
+                with st.expander("Yellow Predictions Heat Map"):
+                    st.subheader(f"{price_type_1}")
+                    heatmap(yellow_filtered_data_1, price_type_1, "Yellow Corn")
 
-            if user_type == 3: 
-                heatmap(white_filtered_data, price_type_1, "Yellow Corn")
+                    st.subheader(f"{price_type_2}")
+                    heatmap(yellow_filtered_data_2, price_type_2, "Yellow Corn")
+            else:
+                st.header(f"Yellow Corn {price_type}")
+                heatmap(yellow_filtered_data, price_type, "Yellow Corn")
 
 
