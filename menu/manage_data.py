@@ -44,7 +44,7 @@ def app():
     fertilizer_database= pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "ammophos_price", "ammosul_price", "complete_price", "urea_price"])
 
     weather_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "tempmax", "tempmin", "temp", "dew","humidity", "precip", "precipprob",
-                                            "precipcover", "windspeed", "sealevelpressure","visibility", "solarradiation", "uvindex","severerisk", 
+                                            "precipcover", 'windgust', "windspeed", "sealevelpressure","visibility", "solarradiation", "uvindex","severerisk", 
                                             "cloudcover", "conditions"])
     
     price_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "farmgate_corngrains_price", "retail_corngrits_price", "wholesale_corngrits_price"])
@@ -72,7 +72,7 @@ def app():
 
 
     if "selected_dataset2_num" not in st.session_state:
-        st.session_state.selected_dataset2_num = 0
+        st.session_state.selected_dataset2_num = 4
 
 
     
@@ -273,27 +273,32 @@ def app():
                     
                     with col_1:
                         temp_min = st.text_input(label="Temperature/Max", placeholder="Temperature/Max", key=f"t_min_input")
-                        temp_max = st.text_input(label="Temperature/Max", placeholder="Temperature/Max", key=f"t_max_input")
+                        temp_max = st.text_input(label="Temperature/Min", placeholder="Temperature/Min", key=f"t_max_input")
                         temp = st.text_input(label="Temperature", placeholder="Temperature", key=f"t_input")
-                        dew = st.text_input(label="Dew", placeholder="Ammophos Price", key=f"dew_input")
-                        humidity = st.text_input(label="Humidity", placeholder="Ammophos Price", key=f"hum_input")
+                        dew = st.text_input(label="Dew", placeholder="Dew", key=f"dew_input")
+                        humidity = st.text_input(label="Humidity", placeholder="Humidity", key=f"hum_input")
                         
                     with col_2:
                         precip = st.text_input(label="Precipitation", placeholder="Precipitation", key=f"precip_input")
                         precipprob = st.text_input(label="Precipitation Probability", placeholder="Precipitation Probability", key=f"preciprob_input")
                         precipcover = st.text_input(label="Precipitation Cover", placeholder="Precipitation Cover", key=f"precov_input")
-                        windspeed = st.text_input(label="wind Speed", placeholder="Ammosul Price", key=f"wind_input")
-                        sealevelpressure = st.text_input(label="Sea Level Pressure", placeholder="Sea Level Pressure", key=f"sea_input")
+                        windgust = st.text_input(label="Wind Gust", placeholder="Wind Gust", key=f"windgust_input")
+                        windspeed = st.text_input(label="Wind Speed", placeholder="Wind Gust", key=f"windspeed_input")
                     
                     with col_3:
+                        sealevelpressure = st.text_input(label="Sea Level Pressure", placeholder="Sea Level Pressure", key=f"sea_input")
                         visibility = st.text_input(label="Visibility", placeholder="Visibility", key=f"vis_price_input")
                         solarradiation = st.text_input(label="Solar Radiation", placeholder="Solar Radiation", key=f"solar_price_input")
                         uvindex = st.text_input(label="Ultraviolet Index", placeholder="Ultraviolet Index", key=f"uv_price_input")
                         severerisk = st.text_input(label="Severe Risk", placeholder="Severe Risk", key=f"sr_price_input")
+
+                    col_4, col_5 = st.columns(2)
+
+                    with col_4:
                         cloudcover = st.text_input(label="Clould Cover", placeholder="Clould Cover", key=f"cloud_price_input")
 
-                    conditions = st.selectbox("Condiions:", ['Partly Cloudy', 'Rain, Partially Cloudy', 'Rain, Overcast', 'Overcast'])
-
+                    with col_5:
+                        conditions = st.selectbox("Condiions:", ['Partly Cloudy', 'Rain, Partially Cloudy', 'Rain, Overcast', 'Overcast'])
 
                 
                 col_1, col_2 = st.columns(2)
@@ -411,8 +416,8 @@ def app():
                             }
 
                         elif selected_dataset2 == "Weather Info":
-                            fields = [temp_max, temp_min, temp, dew, humidity, precip, precipprob, precipcover, windspeed, sealevelpressure, visibility, solarradiation, uvindex, severerisk, cloudcover]
-                            field_names = ["tempmax", "tempmin", "temp", "dew", "humidity", "precip", "precipprob", "precipcover", "windspeed", "sealevelpressure", "visibility", "solarradiation", "uvindex", "severerisk", "cloudcover"]
+                            fields = [temp_max, temp_min, temp, dew, humidity, precip, precipprob, precipcover, windgust, windspeed, sealevelpressure, visibility, solarradiation, uvindex, severerisk, cloudcover]
+                            field_names = ["tempmax", "tempmin", "temp", "dew", "humidity", "precip", "precipprob", "precipcover", "windgust", "windspeed", "sealevelpressure", "visibility", "solarradiation", "uvindex", "severerisk", "cloudcover"]
                             
                             # Attempt to convert all fields to float
                             try:
@@ -537,17 +542,17 @@ def app():
         toggle_sidebar(st.session_state["training"])
 
         # Only show buttons when training is NOT in progress
-        if not st.session_state["training"]:
+        if not st.session_state["training"] and not st.session_state["refresh_control"]:
             st.success("Your System is Ready to be train")     
             st.write("Do you want train the model with the new data or add another?") 
 
             col_1, col_2 = st.columns(2)
 
             with col_1:
-                train_data = st.button("Train Data")
+                train_data = st.button("Train Data", key="train_data_button")
 
             with col_2:
-                add_data = st.button("Add More Data")
+                add_data = st.button("Add More Data", key="add_data_button_1")
 
             # Handle training button
             if train_data:
@@ -563,430 +568,429 @@ def app():
                 st.rerun()  # Rerun to reflect changes
 
 
+        if st.session_state["refresh_control"]:
+            st.success("The Model is Fully Trained, Ready to Add More Data!")
+            if st.button("Add More Data", key="add_data_button_2"):
+                st.session_state.form_key = 0
+                st.session_state.current_prov_index = 0
+                st.session_state.selected_dataset2_num = 0
+                st.session_state.input_data = production_database
+                st.session_state["refresh_control"] = False
+                st.rerun()  # Rerun to reflect changes
+
 
         # Simulated training process
         if st.session_state["training"]:
-
-            if st.session_state["refresh_control"]:
-                st.success("The Model is Fully Trained, Ready to Add More Data!")
-                if st.button("Add More Data"):
-                    st.session_state.form_key = 0
-                    st.session_state.current_prov_index = 0
-                    st.session_state.selected_dataset2_num = 0
-                    st.session_state.input_data = production_database
-                    st.rerun()  # Rerun to reflect changes
-
-            if not st.session_state["refresh_control"]:
-                st.success("Training model...")
+            st.success("Training model...")
 # # ==============================================[BUILD DATASET]=================================================================================   
 
 #                 def build_dataset(province_id, corn_type, dataset1, dataset2, dataset3, dataset4):
-        
+    
 #                     # Filter datasets based on province_id and corn_type
 #                     filtered_dataset1 = dataset1[(dataset1['province_id'] == province_id) & (dataset1['corn_type'] == corn_type)]
 #                     filtered_dataset2 = dataset2[(dataset2['province_id'] == province_id) & (dataset2['corn_type'] == corn_type)]
 #                     filtered_dataset3 = dataset3[(dataset3['province_id'] == province_id) & (dataset3['corn_type'] == corn_type)]
 #                     filtered_dataset4 = dataset4[(dataset4['province_id'] == province_id) & (dataset4['corn_type'] == corn_type)]
-        
+    
 #                     # Merge datasets on 'user_id' (or another common key)
 #                     merged_dataset = pd.merge(filtered_dataset1, filtered_dataset2)
 #                     merged_dataset = pd.merge(merged_dataset, filtered_dataset3)
 #                     merged_dataset = pd.merge(merged_dataset, filtered_dataset4)
 #                     # merged_dataset = merged_dataset.drop(['province_id', 'user_id', 'corn_type'], axis=1)
 #                     merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
-        
+    
 #                     return merged_dataset
 
 
 # # ==============================================[PREDICTS X TEST]=================================================================================   
 
-                def predict_predictor(dataset, predictor_set, corn_type, folder_type, province_name):
-                    # Initialize a dictionary to store models and predictions
-                    models = {}
-                    
-                    # Create an empty DataFrame to hold all predictions
-                    predictions_df = pd.DataFrame()
-                    
-                    # Define features (X) - all columns except those in f_predictor
-                    feature_columns = [col for col in dataset.columns if col not in predictor_set]
-                    
-                    for target in predictor_set:
-                        # Define features (X) and target (y)
-                        X = dataset[feature_columns]
-                        y = dataset[target]
-                    
-                        # Split the data into training and testing sets
-                        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-                    
-                    
-                        # # Create a Linear Regression model
-                        # model = LinearRegression()
+            def predict_predictor(dataset, predictor_set, corn_type, folder_type, province_name):
+                # Initialize a dictionary to store models and predictions
+                models = {}
+                
+                # Create an empty DataFrame to hold all predictions
+                predictions_df = pd.DataFrame()
+                
+                # Define features (X) - all columns except those in f_predictor
+                feature_columns = [col for col in dataset.columns if col not in predictor_set]
+                
+                for target in predictor_set:
+                    # Define features (X) and target (y)
+                    X = dataset[feature_columns]
+                    y = dataset[target]
+                
+                    # Split the data into training and testing sets
+                    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+                
+                
+                    # # Create a Linear Regression model
+                    # model = LinearRegression()
 
-                        # Create a Bayesian Ridge Regression model
-                        model = BayesianRidge()
-                        
-                        
-                        # Fit the model on the training data
-                        model.fit(X_train, y_train)
-                        
-                        # Make predictions on the test set
-                        y_pred = model.predict(X_test)
-                        
-                        # Store the model and predictions
-                        models[target] = model
-                        # Add predictions to the predictions_df DataFrame
-                        predictions_df[target] = pd.Series(y_pred, index=X_test.index)  # Aligning with the index of X_test
-                        
-                        predictions_df = predictions_df.iloc[:24]
-                    
-                    # Adding Month and Year in the dataset
-                    # Set the index to start from 1
-                    predictions_df.index = range(0, len(predictions_df))
-                    
-                    # Assuming white_davao_region is your existing DataFrame
-                    # Initialize last_year and last_month
-                    last_year = dataset['year'].iloc[-1]
-                    last_month = dataset['month'].iloc[-1]
-                    last_month = last_month + 1
-
-                    # Create an empty list to hold new year and month pairs
-                    year_month_pairs = []
-                    
-                    num_rows = len(predictions_df)
-                    
-                    # Generate year and month pairs starting from last_year and last_month
-                    for i in range(num_rows):  # Generate 12 months
-                        # Calculate the month
-                        current_month = (last_month + i - 1) % 12 + 1  # Wrap around using modulo
-                        current_year = last_year + (last_month + i - 1) // 12  # Increment year if month exceeds December
-                        
-                        year_month_pairs.append((current_year, current_month))
-                    
-                    # Create a DataFrame from the year-month pairs
-                    year_month_df = pd.DataFrame(year_month_pairs, columns=['year', 'month'])
-                    
-                    final_dataset = pd.concat([year_month_df, predictions_df], axis=1)
-
-
-                    final_dataset.to_csv(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/predictor_dataset.csv', index=False)
-                    print('Cleaned dataset saved')
-
-                    return final_dataset  
-
-
-
-                # # ==============================================[RERF PREDICTS]=================================================================================   
-
-                def extend_predictors(x_train, x_test):
-
-                    poly = PolynomialFeatures(degree=2, include_bias=True)
-                    x_train = poly.fit_transform(x_train)
-                    x_test = poly.transform(x_test)
-                    
-                    return x_train, x_test
-
-                def RERF_Model(X, Y, corn_type, folder_type, province_name, target):
-                    
-                    # Step 2: Split the data into training and testing sets
-                    x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
-
-
-                    # if ((province_name == "davao_de_oro" and target == "farmgate_corngrains_price" and corn_type == "White Corn") or
-                    #     (province_name == "davao_del_sur" and target == "retail_corngrits_price" and corn_type == "White Corn") or
-                    #     (province_name == "davao_oriental" and target == "retail_corngrits_price" and corn_type == "White Corn") or
-                    #     (province_name == "davao_city" and target == "retail_corngrits_price" and corn_type == "White Corn") or
-                    #     (province_name == "davao_city" and target == "farmgate_corngrains_price" and corn_type == "Yellow Corn")):
-
-                    #     # Optional: Extend x_train and x_test with polynomial features
-                    #     x_train, x_test = extend_predictors(x_train, x_test)
-
-
-                    # Step 3: Perform k-fold cross-validation for Lasso to find optimal λ 
-                    lasso_cv = LassoCV(alphas=np.logspace(-6, 2, 100), cv=5, random_state=0)
-                    lasso_cv.fit(x_train, y_train)
-
-                    # Get the best alpha (λ)
-                    lambda_star = lasso_cv.alpha_
-                    
-                    # Fit Lasso with optimal λ on training data
-                    lasso_optimal = Lasso(alpha=lambda_star)
-                    lasso_optimal.fit(x_train, y_train)
-                    
-                    # Calculate residuals for training data
-                    residuals_train = y_train - lasso_optimal.predict(x_train)
-                    
-                    # Step 4: Fit Random Forest on residuals from Lasso
-                    param_grid_rf = {
-                        'max_features': [2, 3],
-                        'min_samples_leaf': [2, 3, 4, 5],
-                        'min_samples_split': [8, 10, 12],
-                        }
-                    
-                    grid_search_rf = GridSearchCV(estimator=RandomForestRegressor(random_state=42),
-                                            param_grid=param_grid_rf, 
-                                            cv=5)
-                    
-                    grid_search_rf.fit(x_train, residuals_train)
-                    
-                    # Get best parameters for Random Forest
-                    best_params_rf = grid_search_rf.best_params_
-
-
-                    s_star1 = best_params_rf['min_samples_split']
-                    s_star2 = best_params_rf['min_samples_leaf']
-                    m_star = best_params_rf['max_features']
-                    
-                    # Fit Random Forest with optimal parameters on training data
-                    rf_optimal = RandomForestRegressor(min_samples_split=s_star1, min_samples_leaf=s_star2, max_features=m_star, random_state=42)
-                    rf_optimal.fit(x_train, residuals_train)
+                    # Create a Bayesian Ridge Regression model
+                    model = BayesianRidge()
                     
                     
-                    with open(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/Lasso_models_for_{target}.joblib', 'wb') as f:
-                        joblib.dump(lasso_optimal, f)
-                        
-                    with open(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/RF_models_for_{target}.joblib', 'wb') as f:
-                        joblib.dump(rf_optimal, f)
-
-                    # Predictions on test set using both models
-                    y_pred_lasso_test = lasso_optimal.predict(x_test)
+                    # Fit the model on the training data
+                    model.fit(X_train, y_train)
                     
-                    # Calculate residuals for test set
-                    residuals_test = y_test - y_pred_lasso_test
+                    # Make predictions on the test set
+                    y_pred = model.predict(X_test)
                     
-                    # Final predictions from Random Forest on test set residuals
-                    y_pred_rf_test = rf_optimal.predict(x_test)
+                    # Store the model and predictions
+                    models[target] = model
+                    # Add predictions to the predictions_df DataFrame
+                    predictions_df[target] = pd.Series(y_pred, index=X_test.index)  # Aligning with the index of X_test
                     
-                    # Combine predictions from Lasso and Random Forest for final prediction
-                    final_predictions = y_pred_lasso_test + y_pred_rf_test
+                    predictions_df = predictions_df.iloc[:24]
+                
+                # Adding Month and Year in the dataset
+                # Set the index to start from 1
+                predictions_df.index = range(0, len(predictions_df))
+                
+                # Assuming white_davao_region is your existing DataFrame
+                # Initialize last_year and last_month
+                last_year = dataset['year'].iloc[-1]
+                last_month = dataset['month'].iloc[-1]
+                last_month = last_month + 1
+
+                # Create an empty list to hold new year and month pairs
+                year_month_pairs = []
+                
+                num_rows = len(predictions_df)
+                
+                # Generate year and month pairs starting from last_year and last_month
+                for i in range(num_rows):  # Generate 12 months
+                    # Calculate the month
+                    current_month = (last_month + i - 1) % 12 + 1  # Wrap around using modulo
+                    current_year = last_year + (last_month + i - 1) // 12  # Increment year if month exceeds December
                     
-                    # Evaluation metrics can be calculated here (e.g., MAE, MSE)
-                    mae = np.round(mean_absolute_error(y_test, final_predictions), 4)
-                    mse = np.round(mean_squared_error(y_test, final_predictions), 4)
-                    r2 = np.round(r2_score(y_test, final_predictions), 4)
-                                
-                    return r2
+                    year_month_pairs.append((current_year, current_month))
+                
+                # Create a DataFrame from the year-month pairs
+                year_month_df = pd.DataFrame(year_month_pairs, columns=['year', 'month'])
+                
+                final_dataset = pd.concat([year_month_df, predictions_df], axis=1)
+
+
+                final_dataset.to_csv(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/predictor_dataset.csv', index=False)
+                print('Cleaned dataset saved')
+
+                return final_dataset  
 
 
 
-                try:
-                    # White Corn Datasets
-                    white_corn_davao_region = get_white_davao_region_dataset()
-                    white_corn_davao_de_oro = get_white_davao_de_oro_dataset()
-                    white_corn_davao_del_norte = get_white_davao_del_norte_dataset()
-                    white_corn_davao_del_sur = get_white_davao_del_sur_dataset()
-                    white_corn_davao_oriental = get_white_davao_oriental_dataset()
-                    white_corn_davao_city = get_white_davao_city_dataset()
+            # # ==============================================[RERF PREDICTS]=================================================================================   
 
-                    # Yellow Corn Datasets
-                    yellow_corn_davao_region = get_yellow_davao_region_dataset()
-                    yellow_corn_davao_de_oro = get_yellow_davao_de_oro_dataset()
-                    yellow_corn_davao_del_norte = get_yellow_davao_del_norte_dataset()
-                    yellow_corn_davao_del_sur = get_yellow_davao_del_sur_dataset()
-                    yellow_corn_davao_oriental = get_yellow_davao_oriental_dataset()
-                    yellow_corn_davao_city = get_yellow_davao_city_dataset()
+            def extend_predictors(x_train, x_test):
 
-                except httpx.RequestError as e:  # Catch connection & request-related errors
-                    st.error("Connection error: Unable to connect to the server. Please try again later.")
-                    if st.button("Reload"):
-                        st.rerun()
-                    st.stop()  # Prevents further execution
+                poly = PolynomialFeatures(degree=2, include_bias=True)
+                x_train = poly.fit_transform(x_train)
+                x_test = poly.transform(x_test)
+                
+                return x_train, x_test
 
-                except Exception as e:
-                    st.error(f"An unexpected error occurred: {e}")
-                    if st.button("Reload"):
-                        st.rerun()
-                    st.stop()  # Prevents further execution
-
-                # st.dataframe(white_corn_davao_region)
-                # st.dataframe(white_corn_davao_region_dataset)
-
-                w_f_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
-                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
-                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
-                            'cloudcover', 'conditions', 'retail_corngrits_price', 'wholesale_corngrits_price',
-                            'wholesale_corngrains_price']
-
-                w_r_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
-                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
-                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
-                            'cloudcover', 'conditions', 'farmgate_corngrains_price', 'wholesale_corngrits_price',
-                            'wholesale_corngrains_price']
-
-                w_w_predictor_1 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
-                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
-                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
-                            'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrits_price',
-                            'wholesale_corngrains_price']
-
-                w_w_predictor_2 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
-                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
-                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
-                            'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrits_price',
-                            'wholesale_corngrits_price']
+            def RERF_Model(X, Y, corn_type, folder_type, province_name, target):
+                
+                # Step 2: Split the data into training and testing sets
+                x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 
 
+                # if ((province_name == "davao_de_oro" and target == "farmgate_corngrains_price" and corn_type == "White Corn") or
+                #     (province_name == "davao_del_sur" and target == "retail_corngrits_price" and corn_type == "White Corn") or
+                #     (province_name == "davao_oriental" and target == "retail_corngrits_price" and corn_type == "White Corn") or
+                #     (province_name == "davao_city" and target == "retail_corngrits_price" and corn_type == "White Corn") or
+                #     (province_name == "davao_city" and target == "farmgate_corngrains_price" and corn_type == "Yellow Corn")):
+
+                #     # Optional: Extend x_train and x_test with polynomial features
+                #     x_train, x_test = extend_predictors(x_train, x_test)
 
 
-                y_f_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
-                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
-                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
-                            'cloudcover', 'conditions', 'retail_corngrains_price', 'wholesale_corngrits_price',
-                            'wholesale_corngrains_price']
+                # Step 3: Perform k-fold cross-validation for Lasso to find optimal λ 
+                lasso_cv = LassoCV(alphas=np.logspace(-6, 2, 100), cv=5, random_state=0)
+                lasso_cv.fit(x_train, y_train)
 
-                y_r_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
-                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
-                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
-                            'cloudcover', 'conditions', 'farmgate_corngrains_price', 'wholesale_corngrits_price',
-                            'wholesale_corngrains_price']
+                # Get the best alpha (λ)
+                lambda_star = lasso_cv.alpha_
+                
+                # Fit Lasso with optimal λ on training data
+                lasso_optimal = Lasso(alpha=lambda_star)
+                lasso_optimal.fit(x_train, y_train)
+                
+                # Calculate residuals for training data
+                residuals_train = y_train - lasso_optimal.predict(x_train)
+                
+                # Step 4: Fit Random Forest on residuals from Lasso
+                param_grid_rf = {
+                    'max_features': [2, 3],
+                    'min_samples_leaf': [2, 3, 4, 5],
+                    'min_samples_split': [8, 10, 12],
+                    }
+                
+                grid_search_rf = GridSearchCV(estimator=RandomForestRegressor(random_state=42),
+                                        param_grid=param_grid_rf, 
+                                        cv=5)
+                
+                grid_search_rf.fit(x_train, residuals_train)
+                
+                # Get best parameters for Random Forest
+                best_params_rf = grid_search_rf.best_params_
 
-                y_w_predictor_1 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
-                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
-                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
-                            'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrains_price',
-                            'wholesale_corngrains_price']
 
-                y_w_predictor_2 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
-                            'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
-                            'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex', 'severerisk',	
-                            'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrains_price',
-                            'wholesale_corngrits_price']
-
-
-
-
-                # Load datasets
-                white_province_mapping = {
-                    "davao_region": white_corn_davao_region,
-                    "davao_de_oro": white_corn_davao_de_oro,
-                    "davao_del_norte": white_corn_davao_del_norte,
-                    "davao_del_sur": white_corn_davao_del_sur,
-                    "davao_oriental": white_corn_davao_oriental,
-                    "davao_city": white_corn_davao_city,
-                }
-
-                # Load datasets
-                yellow_province_mapping = {
-                    "davao_region": yellow_corn_davao_region,
-                    "davao_de_oro": yellow_corn_davao_de_oro,
-                    "davao_del_norte": yellow_corn_davao_del_norte,
-                    "davao_del_sur": yellow_corn_davao_del_sur,
-                    "davao_oriental": yellow_corn_davao_oriental,
-                    "davao_city": yellow_corn_davao_city,
-                }
-
-                # # ==============================================[WHITE CORN PRICE PREDICTS]=================================================================================   
-
-                col_1, col_2 = st.columns(2)
-
-                with col_1:
-                    st.write("White Corn Price Train")
-                    for dataset_name, dataset in white_province_mapping.items():
-
-                        dataset = dataset.drop(["retail_corngrains_price"], axis=1)
-
-                        # predict farmgate price for white_davao_region
-                        predict_predictor(dataset, w_f_predictor, "White Corn", "For Farmgate", f"{dataset_name}")
+                s_star1 = best_params_rf['min_samples_split']
+                s_star2 = best_params_rf['min_samples_leaf']
+                m_star = best_params_rf['max_features']
+                
+                # Fit Random Forest with optimal parameters on training data
+                rf_optimal = RandomForestRegressor(min_samples_split=s_star1, min_samples_leaf=s_star2, max_features=m_star, random_state=42)
+                rf_optimal.fit(x_train, residuals_train)
+                
+                
+                with open(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/Lasso_models_for_{target}.joblib', 'wb') as f:
+                    joblib.dump(lasso_optimal, f)
                     
-                        f_X = dataset.drop(['farmgate_corngrains_price'], axis=1)
-                        f_Y = dataset['farmgate_corngrains_price']
-                        f_r2 = RERF_Model(f_X, f_Y, "White Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
+                with open(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/RF_models_for_{target}.joblib', 'wb') as f:
+                    joblib.dump(rf_optimal, f)
+
+                # Predictions on test set using both models
+                y_pred_lasso_test = lasso_optimal.predict(x_test)
+                
+                # Calculate residuals for test set
+                residuals_test = y_test - y_pred_lasso_test
+                
+                # Final predictions from Random Forest on test set residuals
+                y_pred_rf_test = rf_optimal.predict(x_test)
+                
+                # Combine predictions from Lasso and Random Forest for final prediction
+                final_predictions = y_pred_lasso_test + y_pred_rf_test
+                
+                # Evaluation metrics can be calculated here (e.g., MAE, MSE)
+                mae = np.round(mean_absolute_error(y_test, final_predictions), 4)
+                mse = np.round(mean_squared_error(y_test, final_predictions), 4)
+                r2 = np.round(r2_score(y_test, final_predictions), 4)
+                            
+                return r2
 
 
 
-                        
-                        # predict retail price for white_davao_region
-                        predict_predictor(dataset, w_r_predictor, "White Corn", "For Retail",  f"{dataset_name}")
+            try:
+                # White Corn Datasets
+                white_corn_davao_region = get_white_davao_region_dataset()
+                white_corn_davao_de_oro = get_white_davao_de_oro_dataset()
+                white_corn_davao_del_norte = get_white_davao_del_norte_dataset()
+                white_corn_davao_del_sur = get_white_davao_del_sur_dataset()
+                white_corn_davao_oriental = get_white_davao_oriental_dataset()
+                white_corn_davao_city = get_white_davao_city_dataset()
+
+                # Yellow Corn Datasets
+                yellow_corn_davao_region = get_yellow_davao_region_dataset()
+                yellow_corn_davao_de_oro = get_yellow_davao_de_oro_dataset()
+                yellow_corn_davao_del_norte = get_yellow_davao_del_norte_dataset()
+                yellow_corn_davao_del_sur = get_yellow_davao_del_sur_dataset()
+                yellow_corn_davao_oriental = get_yellow_davao_oriental_dataset()
+                yellow_corn_davao_city = get_yellow_davao_city_dataset()
+
+            except httpx.RequestError as e:  # Catch connection & request-related errors
+                st.error("Connection error: Unable to connect to the server. Please try again later.")
+                if st.button("Reload"):
+                    st.rerun()
+                st.stop()  # Prevents further execution
+
+            except Exception as e:
+                st.error(f"An unexpected error occurred: {e}")
+                if st.button("Reload"):
+                    st.rerun()
+                st.stop()  # Prevents further execution
+
+            # st.dataframe(white_corn_davao_region)
+            # st.dataframe(white_corn_davao_region_dataset)
+
+            w_f_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                        'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                        'windgust', 'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex',
+                        'severerisk', 'cloudcover', 'conditions', 'retail_corngrits_price', 'wholesale_corngrits_price',
+                        'wholesale_corngrains_price']
+
+            w_r_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                        'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                        'windgust', 'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex',
+                        'severerisk', 'cloudcover', 'conditions', 'farmgate_corngrains_price', 'wholesale_corngrits_price',
+                        'wholesale_corngrains_price']
+
+            w_w_predictor_1 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                        'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                        'windgust', 'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex',
+                        'severerisk', 'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrits_price',
+                        'wholesale_corngrains_price']
+
+            w_w_predictor_2 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                        'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                        'windgust', 'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex',
+                        'severerisk', 'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrits_price',
+                        'wholesale_corngrits_price']
+
+
+
+
+            y_f_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                        'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                        'windgust', 'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex',
+                        'severerisk', 'cloudcover', 'conditions', 'retail_corngrains_price', 'wholesale_corngrits_price',
+                        'wholesale_corngrains_price']
+
+            y_r_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                        'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                        'windgust', 'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex',
+                        'severerisk', 'cloudcover', 'conditions', 'farmgate_corngrains_price', 'wholesale_corngrits_price',
+                        'wholesale_corngrains_price']
+
+            y_w_predictor_1 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                        'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                        'windgust', 'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex',
+                        'severerisk', 'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrains_price',
+                        'wholesale_corngrains_price']
+
+            y_w_predictor_2 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 
+                        'tempmax', 'tempmin', 'temp', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover',	
+                        'windgust', 'windspeed', 'sealevelpressure', 'visibility', 'solarradiation', 'uvindex',
+                        'severerisk', 'cloudcover', 'conditions', 'farmgate_corngrains_price', 'retail_corngrains_price',
+                        'wholesale_corngrits_price']
+
+
+
+
+            # Load datasets
+            white_province_mapping = {
+                "davao_region": white_corn_davao_region,
+                "davao_de_oro": white_corn_davao_de_oro,
+                "davao_del_norte": white_corn_davao_del_norte,
+                "davao_del_sur": white_corn_davao_del_sur,
+                "davao_oriental": white_corn_davao_oriental,
+                "davao_city": white_corn_davao_city,
+            }
+
+            # Load datasets
+            yellow_province_mapping = {
+                "davao_region": yellow_corn_davao_region,
+                "davao_de_oro": yellow_corn_davao_de_oro,
+                "davao_del_norte": yellow_corn_davao_del_norte,
+                "davao_del_sur": yellow_corn_davao_del_sur,
+                "davao_oriental": yellow_corn_davao_oriental,
+                "davao_city": yellow_corn_davao_city,
+            }
+
+            # # ==============================================[WHITE CORN PRICE PREDICTS]=================================================================================   
+
+            col_1, col_2 = st.columns(2)
+
+            with col_1:
+                st.write("White Corn Price Train")
+                for dataset_name, dataset in white_province_mapping.items():
+
+                    dataset = dataset.drop(["retail_corngrains_price"], axis=1)
+
+                    # predict farmgate price for white_davao_region
+                    predict_predictor(dataset, w_f_predictor, "White Corn", "For Farmgate", f"{dataset_name}")
+                
+                    f_X = dataset.drop(['farmgate_corngrains_price'], axis=1)
+                    f_Y = dataset['farmgate_corngrains_price']
+                    f_r2 = RERF_Model(f_X, f_Y, "White Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
+
+
+
                     
-                        r_X = dataset.drop(['retail_corngrits_price'], axis=1)
-                        r_Y = dataset['retail_corngrits_price']
-                        r_r2 = RERF_Model(r_X, r_Y, "White Corn", "For Retail",  f"{dataset_name}", "retail_corngrits_price") 
+                    # predict retail price for white_davao_region
+                    predict_predictor(dataset, w_r_predictor, "White Corn", "For Retail",  f"{dataset_name}")
+                
+                    r_X = dataset.drop(['retail_corngrits_price'], axis=1)
+                    r_Y = dataset['retail_corngrits_price']
+                    r_r2 = RERF_Model(r_X, r_Y, "White Corn", "For Retail",  f"{dataset_name}", "retail_corngrits_price") 
 
 
 
 
-                        # predict wholesale corn grits price for white_davao_region
-                        predict_predictor(dataset, w_w_predictor_1, "White Corn", "For Wholesale",  f"{dataset_name}")
-                        print()
+                    # predict wholesale corn grits price for white_davao_region
+                    predict_predictor(dataset, w_w_predictor_1, "White Corn", "For Wholesale",  f"{dataset_name}")
+                    print()
+                
+                    w_X_1 = dataset.drop(['wholesale_corngrits_price'], axis=1)
+                    w_Y_1 = dataset['wholesale_corngrits_price']
+                    w_r2_1 = RERF_Model(w_X_1, w_Y_1, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
+
+
+
+
+
+                    # predict wholesale corn grains price for white_davao_region
+                    predict_predictor(dataset, w_w_predictor_2, "White Corn", "For Wholesale",  f"{dataset_name}")
+                    print()
+                
+                    w_X_2 = dataset.drop(['wholesale_corngrains_price'], axis=1)
+                    w_Y_2 = dataset['wholesale_corngrains_price']
+                    w_r2_2 = RERF_Model(w_X_2, w_Y_2, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
+
+
+
+                    st.success(f'White Corn {dataset_name} trained successfully!')
+                    st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
+                    st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
+
+
+            # # # ==============================================[YELLOW CORN PRICE PREDICTS]=================================================================================   
+            with col_2:
+                st.write("Yellow Corn Price Train")
+                for dataset_name, dataset in yellow_province_mapping.items():
+
+                    dataset = dataset.drop(["retail_corngrits_price"], axis=1)
+
+                    # predict farmgate price for white_davao_region
+                    predict_predictor(dataset, y_f_predictor, "Yellow Corn", "For Farmgate", f"{dataset_name}")
+                
+                    f_X = dataset.drop(['farmgate_corngrains_price'], axis=1)
+                    f_Y = dataset['farmgate_corngrains_price']
+                    f_r2 = RERF_Model(f_X, f_Y, "Yellow Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
+
+
+
                     
-                        w_X_1 = dataset.drop(['wholesale_corngrits_price'], axis=1)
-                        w_Y_1 = dataset['wholesale_corngrits_price']
-                        w_r2_1 = RERF_Model(w_X_1, w_Y_1, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
+                    # predict retail price for white_davao_region
+                    predict_predictor(dataset, y_r_predictor, "Yellow Corn", "For Retail",  f"{dataset_name}")
+
+                    r_X = dataset.drop(['retail_corngrains_price'], axis=1)
+                    r_Y = dataset['retail_corngrains_price']
+                    r_r2 = RERF_Model(r_X, r_Y, "Yellow Corn", "For Retail",  f"{dataset_name}", "retail_corngrains_price") 
+
+
+
+                    # predict wholesale corn grits price for white_davao_region
+                    predict_predictor(dataset, y_w_predictor_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
+                    print()
+                
+                    w_X_1 = dataset.drop(['wholesale_corngrits_price'], axis=1)
+                    w_Y_1 = dataset['wholesale_corngrits_price']
+                    w_r2_1 = RERF_Model(w_X_1, w_Y_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
+                
 
 
 
 
-
-                        # predict wholesale corn grains price for white_davao_region
-                        predict_predictor(dataset, w_w_predictor_2, "White Corn", "For Wholesale",  f"{dataset_name}")
-                        print()
-                    
-                        w_X_2 = dataset.drop(['wholesale_corngrains_price'], axis=1)
-                        w_Y_2 = dataset['wholesale_corngrains_price']
-                        w_r2_2 = RERF_Model(w_X_2, w_Y_2, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
-
-
-
-                        st.success(f'White Corn {dataset_name} trained successfully!')
-                        st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
-                        st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
-
-
-                # # # ==============================================[YELLOW CORN PRICE PREDICTS]=================================================================================   
-                with col_2:
-                    st.write("Yellow Corn Price Train")
-                    for dataset_name, dataset in yellow_province_mapping.items():
-
-                        dataset = dataset.drop(["retail_corngrits_price"], axis=1)
-
-                        # predict farmgate price for white_davao_region
-                        predict_predictor(dataset, y_f_predictor, "Yellow Corn", "For Farmgate", f"{dataset_name}")
-                    
-                        f_X = dataset.drop(['farmgate_corngrains_price'], axis=1)
-                        f_Y = dataset['farmgate_corngrains_price']
-                        f_r2 = RERF_Model(f_X, f_Y, "Yellow Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
+                    # predict wholesale corn grains price for white_davao_region
+                    predict_predictor(dataset, y_w_predictor_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
+                    print()
+                
+                    w_X_2 = dataset.drop(['wholesale_corngrains_price'], axis=1)
+                    w_Y_2 = dataset['wholesale_corngrains_price']
+                    w_r2_2 = RERF_Model(w_X_2, w_Y_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
 
 
 
-                        
-                        # predict retail price for white_davao_region
-                        predict_predictor(dataset, y_r_predictor, "Yellow Corn", "For Retail",  f"{dataset_name}")
-
-                        r_X = dataset.drop(['retail_corngrains_price'], axis=1)
-                        r_Y = dataset['retail_corngrains_price']
-                        r_r2 = RERF_Model(r_X, r_Y, "Yellow Corn", "For Retail",  f"{dataset_name}", "retail_corngrains_price") 
+                    st.success(f'Yellow Corn {dataset_name} trained successfully!')
+                    st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
+                    st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
 
 
-
-                        # predict wholesale corn grits price for white_davao_region
-                        predict_predictor(dataset, y_w_predictor_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
-                        print()
-                    
-                        w_X_1 = dataset.drop(['wholesale_corngrits_price'], axis=1)
-                        w_Y_1 = dataset['wholesale_corngrits_price']
-                        w_r2_1 = RERF_Model(w_X_1, w_Y_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
-                    
-
-
-
-
-                        # predict wholesale corn grains price for white_davao_region
-                        predict_predictor(dataset, y_w_predictor_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
-                        print()
-                    
-                        w_X_2 = dataset.drop(['wholesale_corngrains_price'], axis=1)
-                        w_Y_2 = dataset['wholesale_corngrains_price']
-                        w_r2_2 = RERF_Model(w_X_2, w_Y_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
-
-
-
-                        st.success(f'Yellow Corn {dataset_name} trained successfully!')
-                        st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
-                        st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
-
-
-                        if dataset_name == "davao_city":
-                            st.session_state["training"] = False  # Re-enable sidebar
-                            st.session_state["refresh_control"] = True # Endable Add More Data Button  
-                            st.rerun() 
+                    if dataset_name == "davao_city":
+                        st.session_state["training"] = False  # Re-enable sidebar
+                        st.session_state["refresh_control"] = True # Endable Add More Data Button  
+                        st.rerun() 
                                 
             

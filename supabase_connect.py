@@ -509,6 +509,7 @@ def submit_predictions_weather(predictions_df, user_id):
             'precip': float(row['precip']),  # Assuming this column exists
             'precipprob': float(row['precipprob']),  # Assuming this column exists
             'precipcover': float(row['precipcover']),  # Assuming this column exists
+            'windgust': float(row['windgust']),  # Assuming this column exists
             'windspeed': float(row['windspeed']),  # Assuming this column exists
             'sealevelpressure': float(row['sealevelpressure']),  # Assuming this column exists
             'visibility': float(row['visibility']),  # Assuming this column exists
