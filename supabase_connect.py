@@ -501,8 +501,6 @@ def submit_predictions_weather(predictions_df, user_id):
             'month': int(row['month']),  # Assuming 'Month' is a column in predictions_df
             'province_id': int(row['province_id']),  # Assuming 'province_id' is already included
             'corn_type': int(row['corn_type']),  # Assuming 'corn_type' is already included
-            'tempmax': float(row['tempmax']),  # Assuming this column exists
-            'tempmin': float(row['tempmin']),  # Assuming this column exists
             'temp': float(row['temp']),  # Assuming this column exists
             'dew': float(row['dew']),  # Assuming this column exists
             'humidity': float(row['humidity']),  # Assuming this column exists
