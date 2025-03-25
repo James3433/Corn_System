@@ -23,8 +23,8 @@ def app():
 
     st.markdown(f"""
         <div class="intro">
-            <h3> Welcome to Corn.com</h3>
-            <p> Here in Corn.com we help you with your problems</p>
+            <h3> Welcome to DavaoRegionCorn.com</h3>
+            <p> Here we help you with your problems about corn</p>
         </div>
         <div class="info">
             <div class="info_1">
