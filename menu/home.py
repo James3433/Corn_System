@@ -65,8 +65,8 @@ def app():
                 <p>This feature of the app will show the predicted data from one year or two years in choropleth plots.</p>
             </div>
             <div class="step_info_box_4">
-                <h5>Manage Data</h5>
-                <p>This feature of the app allows users to add new data into the database, ensuring that the application remains dynamic and responsive to user needs.</p>
+                <h5>Comments</h5>
+                <p>This feature of the app will allow the users to provide advice or complaints to the system.</p>
             </div>
         </div>  <!-- Closing the step_info div -->
     """, unsafe_allow_html=True)
@@ -90,8 +90,8 @@ def app():
                 <p>This feature of the app will show the predicted data from one year or two years in choropleth plots.</p>
             </div>
             <div class="step_info_box_4">
-                <h5>Comments</h5>
-                <p>This feature of the app will allow the users to provide advice or complaints to the system.</p>
+                <h5>Manage Data</h5>
+                <p>This feature of the app allows users to add new data into the database, ensuring that the application remains dynamic and responsive to user needs.</p>
             </div>
             <div class="step_info_box_5">
                 <h5>Comments</h5>

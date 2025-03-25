@@ -3,7 +3,7 @@ from menu import home, monthly_data, manage_data, manage_predict_1, manage_predi
 from streamlit_option_menu import option_menu
 from streamlit_modal import Modal
 
-st.set_page_config(page_title='Corn.com', page_icon='images/corn_logo.png', layout='wide')
+st.set_page_config(page_title='DavaoRegionCorn.com', page_icon='images/corn_logo.png', layout='wide')
 
 # Initialize session state variables if they don't exist
 if 'logged_in' not in st.session_state:
