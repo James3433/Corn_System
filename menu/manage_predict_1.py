@@ -271,19 +271,26 @@ def app():
 
         # Add trace
         if user_type == 2:  
-            price_columns = ['wholesale_corngrits_price', 'wholesale_corngrains_price']
+            price_columns = {
+                'wholesale_corngrits_price': 'W-1', 
+                'wholesale_corngrains_price': 'W-2'
+                }
 
             # Plot each price type
-            for price_types in price_columns:
+            for price_types, price_id in price_columns.items():
                 if price_types in dataset.columns:
+                    # Replace underscores with spaces and remove '_price'
+                    formatted_name = price_types.replace('_', ' ').replace('_price', '').title()
+
                     fig.add_trace(go.Scatter(
                         x=dataset['Month Year'],
                         y=dataset[price_types],
                         mode='markers+lines',
-                        name=price_types.replace('_', ' ').title(),
-                        hovertemplate=f"Type: {price_types.replace('_', ' ').title()}<br>Price: %{{y}}<extra></extra>",
+                        name=price_id,
+                        hovertemplate=f"Type: {formatted_name}<br>Price: %{{y}}<extra></extra>",
 
-                    ))
+                        )
+                    )
         else:
             fig.add_trace(go.Scatter(
                 x=dataset['Month Year'],

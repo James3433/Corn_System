@@ -13,6 +13,7 @@ from supabase_connect import get_corn_production_dataset, get_fertilizer_dataset
 from supabase_connect import get_white_davao_region_dataset, get_white_davao_de_oro_dataset, get_white_davao_del_norte_dataset, get_white_davao_del_sur_dataset, get_white_davao_oriental_dataset, get_white_davao_city_dataset
 from supabase_connect import get_yellow_davao_region_dataset, get_yellow_davao_de_oro_dataset, get_yellow_davao_del_norte_dataset, get_yellow_davao_del_sur_dataset, get_yellow_davao_oriental_dataset, get_yellow_davao_city_dataset
 from sklearn.preprocessing import PolynomialFeatures
+from prophet import Prophet
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression, BayesianRidge
 from sklearn.linear_model import Lasso
@@ -71,7 +72,7 @@ def app():
 
 
     if "selected_dataset2_num" not in st.session_state:
-        st.session_state.selected_dataset2_num = 0
+        st.session_state.selected_dataset2_num = 4
 
 
     
@@ -596,77 +597,68 @@ def app():
 # # ==============================================[PREDICTS X TEST]=================================================================================   
 
             def predict_predictor(dataset, predictor_set, corn_type, folder_type, province_name):
-                # Initialize a dictionary to store models and predictions
-                models = {}
+                # Create datetime index from year and month
+                new_dataset = dataset
+                new_dataset['ds'] = pd.to_datetime(new_dataset['year'].astype(str) + '-' + new_dataset['month'].astype(str), format='%Y-%m')
                 
-                # Create an empty DataFrame to hold all predictions
+                # Initialize dictionary to store models
+                models = {}
                 predictions_df = pd.DataFrame()
                 
-                # Define features (X) - all columns except those in f_predictor
-                feature_columns = [col for col in dataset.columns if col not in predictor_set]
-                
+                # st.dataframe(dataset)
+
                 for target in predictor_set:
-                    # Define features (X) and target (y)
-                    X = dataset[feature_columns]
-                    y = dataset[target]
-                
-                    # Split the data into training and testing sets
-                    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-                
-                
-                    # # Create a Linear Regression model
-                    # model = LinearRegression()
+                    # Prepare Prophet-compatible dataframe
+                    prophet_df = new_dataset[['ds', target]].rename(columns={target: 'y'})
+                    
 
-                    # Create a Bayesian Ridge Regression model
-                    model = BayesianRidge()
-                    
-                    
-                    # Fit the model on the training data
-                    model.fit(X_train, y_train)
-                    
-                    # Make predictions on the test set
-                    y_pred = model.predict(X_test)
-                    
-                    # Store the model and predictions
-                    models[target] = model
-                    # Add predictions to the predictions_df DataFrame
-                    predictions_df[target] = pd.Series(y_pred, index=X_test.index)  # Aligning with the index of X_test
-                    
-                    predictions_df = predictions_df.iloc[:24]
-                
-                # Adding Month and Year in the dataset
-                # Set the index to start from 1
-                predictions_df.index = range(0, len(predictions_df))
-                
-                # Assuming white_davao_region is your existing DataFrame
-                # Initialize last_year and last_month
-                last_year = dataset['year'].iloc[-1]
-                last_month = dataset['month'].iloc[-1]
-                last_month = last_month + 1
+                    # Create and fit Prophet model
+                    fr_model = Prophet(yearly_seasonality = True, seasonality_prior_scale=0.1)
 
-                # Create an empty list to hold new year and month pairs
-                year_month_pairs = []
-                
-                num_rows = len(predictions_df)
-                
-                # Generate year and month pairs starting from last_year and last_month
-                for i in range(num_rows):  # Generate 12 months
-                    # Calculate the month
-                    current_month = (last_month + i - 1) % 12 + 1  # Wrap around using modulo
-                    current_year = last_year + (last_month + i - 1) // 12  # Increment year if month exceeds December
+                    fr_model.fit(prophet_df)
+
+                    # Create future dataframe
+                    future = fr_model.make_future_dataframe(periods=25, freq='M')
                     
-                    year_month_pairs.append((current_year, current_month))
-                
-                # Create a DataFrame from the year-month pairs
-                year_month_df = pd.DataFrame(year_month_pairs, columns=['year', 'month'])
-                
-                final_dataset = pd.concat([year_month_df, predictions_df], axis=1)
+                    # Generate predictions
+                    forecast = fr_model.predict(future)
 
+                    # Filter forecast to include only future predictions (last 25 rows)
+                    forecast = forecast.tail(25)
 
-                final_dataset.to_csv(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/predictor_dataset.csv', index=False)
+                    # Remove the first row of the forcast because it tried to predict the last row of the dataset
+                    forecast.drop(forecast.index[0], inplace=True)
+
+                    
+                    # Store model and predictions
+                    models[target] = fr_model
+                    predictions = forecast[['ds', 'yhat']].rename(columns={'yhat': target}).round(2)
+                    
+                    # Merge predictions into main DataFrame
+                    if predictions_df.empty:
+                        predictions_df = predictions
+                    else:
+                        predictions_df = pd.merge(predictions_df, predictions, on='ds', how='outer')
+                
+                # Extract year and month from the 'ds' column (datetime)
+                predictions_df['year'] = predictions_df['ds'].dt.year
+                predictions_df['month'] = predictions_df['ds'].dt.month
+                
+                # Drop the datetime column and reorder
+                predictions_df = predictions_df.drop('ds', axis=1)
+                col_order = ['year', 'month'] + predictor_set
+                predictions_df = predictions_df[col_order].reset_index(drop=True)
+                
+                # st.dataframe(predictions_df)
+
+                # Save results
+                predictions_df.to_csv(
+                    f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/predictor_dataset.csv', 
+                    index=False
+                )
                 print('Cleaned dataset saved')
-
-                return final_dataset  
+                
+                return predictions_df
 
 
 
@@ -681,10 +673,9 @@ def app():
                 return x_train, x_test
 
             def RERF_Model(X, Y, corn_type, folder_type, province_name, target):
-                
-                # Step 2: Split the data into training and testing sets
-                x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 
+                X = X.drop('ds', axis=1)
+                
 
                 # if ((province_name == "davao_de_oro" and target == "farmgate_corngrains_price" and corn_type == "White Corn") or
                 #     (province_name == "davao_del_sur" and target == "retail_corngrits_price" and corn_type == "White Corn") or
@@ -696,32 +687,32 @@ def app():
                 #     x_train, x_test = extend_predictors(x_train, x_test)
 
 
-                # Step 3: Perform k-fold cross-validation for Lasso to find optimal λ 
+                # Step 2: Perform k-fold cross-validation for Lasso to find optimal λ 
                 lasso_cv = LassoCV(alphas=np.logspace(-6, 2, 100), cv=5, random_state=0)
-                lasso_cv.fit(x_train, y_train)
+                lasso_cv.fit(X, Y)
 
                 # Get the best alpha (λ)
                 lambda_star = lasso_cv.alpha_
                 
                 # Fit Lasso with optimal λ on training data
                 lasso_optimal = Lasso(alpha=lambda_star)
-                lasso_optimal.fit(x_train, y_train)
+                lasso_optimal.fit(X, Y)
                 
                 # Calculate residuals for training data
-                residuals_train = y_train - lasso_optimal.predict(x_train)
+                residuals_train = Y - lasso_optimal.predict(X)
                 
-                # Step 4: Fit Random Forest on residuals from Lasso
+                # Step 3: Fit Random Forest on residuals from Lasso
                 param_grid_rf = {
-                    'max_features': [2, 3],
-                    'min_samples_leaf': [2, 3, 4, 5],
-                    'min_samples_split': [8, 10, 12],
+                    'max_features': ["sqrt", "log2", None],
+                    'min_samples_leaf': [1, 3, 5],
+                    'min_samples_split': [2, 3, 4]
                     }
                 
                 grid_search_rf = GridSearchCV(estimator=RandomForestRegressor(random_state=42),
                                         param_grid=param_grid_rf, 
                                         cv=5)
                 
-                grid_search_rf.fit(x_train, residuals_train)
+                grid_search_rf.fit(X, residuals_train)
                 
                 # Get best parameters for Random Forest
                 best_params_rf = grid_search_rf.best_params_
@@ -733,7 +724,7 @@ def app():
                 
                 # Fit Random Forest with optimal parameters on training data
                 rf_optimal = RandomForestRegressor(min_samples_split=s_star1, min_samples_leaf=s_star2, max_features=m_star, random_state=42)
-                rf_optimal.fit(x_train, residuals_train)
+                rf_optimal.fit(X, residuals_train)
                 
                 
                 with open(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/Lasso_models_for_{target}.joblib', 'wb') as f:
@@ -742,24 +733,21 @@ def app():
                 with open(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/RF_models_for_{target}.joblib', 'wb') as f:
                     joblib.dump(rf_optimal, f)
 
-                # Predictions on test set using both models
-                y_pred_lasso_test = lasso_optimal.predict(x_test)
+                # # Predictions on test set using both models
+                # y_pred_lasso_test = lasso_optimal.predict(X_test)
+                                
+                # # Final predictions from Random Forest on test set residuals
+                # y_pred_rf_test = rf_optimal.predict(X_test)
                 
-                # Calculate residuals for test set
-                residuals_test = y_test - y_pred_lasso_test
+                # # Combine predictions from Lasso and Random Forest for final prediction
+                # final_predictions = y_pred_lasso_test + y_pred_rf_test
                 
-                # Final predictions from Random Forest on test set residuals
-                y_pred_rf_test = rf_optimal.predict(x_test)
-                
-                # Combine predictions from Lasso and Random Forest for final prediction
-                final_predictions = y_pred_lasso_test + y_pred_rf_test
-                
-                # Evaluation metrics can be calculated here (e.g., MAE, MSE)
-                mae = np.round(mean_absolute_error(y_test, final_predictions), 4)
-                mse = np.round(mean_squared_error(y_test, final_predictions), 4)
-                r2 = np.round(r2_score(y_test, final_predictions), 4)
+                # # Evaluation metrics can be calculated here (e.g., MAE, MSE)
+                # mae = np.round(mean_absolute_error(y_test, final_predictions), 4)
+                # mse = np.round(mean_squared_error(y_test, final_predictions), 4)
+                # r2 = np.round(r2_score(y_test, final_predictions), 4)
                             
-                return r2
+                # return r2
 
 
 
@@ -872,50 +860,51 @@ def app():
                     dataset = dataset.drop(["retail_corngrains_price"], axis=1)
 
                     # predict farmgate price for white_davao_region
-                    predict_predictor(dataset, w_f_predictor, "White Corn", "For Farmgate", f"{dataset_name}")
+                    f_future_pred = predict_predictor(dataset, w_f_predictor, "White Corn", "For Farmgate", f"{dataset_name}")
+
                 
                     f_X = dataset.drop(['farmgate_corngrains_price'], axis=1)
                     f_Y = dataset['farmgate_corngrains_price']
-                    f_r2 = RERF_Model(f_X, f_Y, "White Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
+                    RERF_Model(f_X, f_Y, "White Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
 
 
 
                     
                     # predict retail price for white_davao_region
-                    predict_predictor(dataset, w_r_predictor, "White Corn", "For Retail",  f"{dataset_name}")
+                    r_future_pred = predict_predictor(dataset, w_r_predictor, "White Corn", "For Retail",  f"{dataset_name}")
                 
                     r_X = dataset.drop(['retail_corngrits_price'], axis=1)
                     r_Y = dataset['retail_corngrits_price']
-                    r_r2 = RERF_Model(r_X, r_Y, "White Corn", "For Retail",  f"{dataset_name}", "retail_corngrits_price") 
+                    RERF_Model(r_X, r_Y, "White Corn", "For Retail",  f"{dataset_name}", "retail_corngrits_price") 
 
 
 
 
                     # predict wholesale corn grits price for white_davao_region
-                    predict_predictor(dataset, w_w_predictor_1, "White Corn", "For Wholesale",  f"{dataset_name}")
+                    w_future_pred_1 = predict_predictor(dataset, w_w_predictor_1, "White Corn", "For Wholesale",  f"{dataset_name}")
                     print()
                 
                     w_X_1 = dataset.drop(['wholesale_corngrits_price'], axis=1)
                     w_Y_1 = dataset['wholesale_corngrits_price']
-                    w_r2_1 = RERF_Model(w_X_1, w_Y_1, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
+                    RERF_Model(w_X_1, w_Y_1, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
 
 
 
 
 
                     # predict wholesale corn grains price for white_davao_region
-                    predict_predictor(dataset, w_w_predictor_2, "White Corn", "For Wholesale",  f"{dataset_name}")
+                    w_future_pred_2 = predict_predictor(dataset, w_w_predictor_2, "White Corn", "For Wholesale",  f"{dataset_name}")
                     print()
                 
                     w_X_2 = dataset.drop(['wholesale_corngrains_price'], axis=1)
                     w_Y_2 = dataset['wholesale_corngrains_price']
-                    w_r2_2 = RERF_Model(w_X_2, w_Y_2, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
+                    RERF_Model(w_X_2, w_Y_2, "White Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
 
 
 
                     st.success(f'White Corn {dataset_name} trained successfully!')
-                    st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
-                    st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
+                    # st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
+                    # st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
 
 
             # # # ==============================================[YELLOW CORN PRICE PREDICTS]=================================================================================   
@@ -926,53 +915,54 @@ def app():
                     dataset = dataset.drop(["retail_corngrits_price"], axis=1)
 
                     # predict farmgate price for white_davao_region
-                    predict_predictor(dataset, y_f_predictor, "Yellow Corn", "For Farmgate", f"{dataset_name}")
+                    f_future_pred = predict_predictor(dataset, y_f_predictor, "Yellow Corn", "For Farmgate", f"{dataset_name}")
                 
                     f_X = dataset.drop(['farmgate_corngrains_price'], axis=1)
                     f_Y = dataset['farmgate_corngrains_price']
-                    f_r2 = RERF_Model(f_X, f_Y, "Yellow Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
+                    RERF_Model(f_X, f_Y, "Yellow Corn", "For Farmgate", f"{dataset_name}", "farmgate_corngrains_price") 
 
 
 
                     
                     # predict retail price for white_davao_region
-                    predict_predictor(dataset, y_r_predictor, "Yellow Corn", "For Retail",  f"{dataset_name}")
+                    r_future_pred = predict_predictor(dataset, y_r_predictor, "Yellow Corn", "For Retail",  f"{dataset_name}")
 
                     r_X = dataset.drop(['retail_corngrains_price'], axis=1)
                     r_Y = dataset['retail_corngrains_price']
-                    r_r2 = RERF_Model(r_X, r_Y, "Yellow Corn", "For Retail",  f"{dataset_name}", "retail_corngrains_price") 
+                    RERF_Model(r_X, r_Y, "Yellow Corn", "For Retail",  f"{dataset_name}", "retail_corngrains_price") 
 
 
 
                     # predict wholesale corn grits price for white_davao_region
-                    predict_predictor(dataset, y_w_predictor_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
+                    w_future_pred_1 = predict_predictor(dataset, y_w_predictor_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
                     print()
                 
                     w_X_1 = dataset.drop(['wholesale_corngrits_price'], axis=1)
                     w_Y_1 = dataset['wholesale_corngrits_price']
-                    w_r2_1 = RERF_Model(w_X_1, w_Y_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
+                    RERF_Model(w_X_1, w_Y_1, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrits_price") 
                 
 
 
 
 
                     # predict wholesale corn grains price for white_davao_region
-                    predict_predictor(dataset, y_w_predictor_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
+                    w_future_pred_2 = predict_predictor(dataset, y_w_predictor_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}")
                     print()
                 
                     w_X_2 = dataset.drop(['wholesale_corngrains_price'], axis=1)
                     w_Y_2 = dataset['wholesale_corngrains_price']
-                    w_r2_2 = RERF_Model(w_X_2, w_Y_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
+                    RERF_Model(w_X_2, w_Y_2, "Yellow Corn", "For Wholesale",  f"{dataset_name}", "wholesale_corngrains_price") 
 
 
 
                     st.success(f'Yellow Corn {dataset_name} trained successfully!')
-                    st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
-                    st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
+                    # st.write(f'Farmgate: {f_r2} || Retail: {r_r2}')
+                    # st.write(f'Wholesale Corngrits: {w_r2_1} || Wholesale Corngrains: {w_r2_2}')
 
 
                     if dataset_name == "davao_city":
                         st.session_state["training"] = False  # Re-enable sidebar
+                
                         st.session_state["refresh_control"] = True # Endable Add More Data Button  
                         st.rerun() 
                                 

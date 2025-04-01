@@ -52,37 +52,39 @@ def app():
 
                 # Define price types based on dataset columns
                 if 'retail_corngrits_price' in dataset.columns:
-                    price_types = {
-                        'farmgate_corngrains_price': 'Farmgate Corn Grains Price',
-                        'retail_corngrits_price': 'Retail Corn Grits Price',
-                        'wholesale_corngrits_price': 'Wholesale Corn Grits Price',
-                        'wholesale_corngrains_price': 'Wholesale Corn Grains Price'
-                    }
+                    price_columns = {
+                        'farmgate_corngrains_price': 'F-1', 
+                        'retail_corngrits_price': 'R-1', 
+                        'wholesale_corngrits_price': 'W-1', 
+                        'wholesale_corngrains_price': 'W-2'
+                        }
                 elif 'retail_corngrains_price' in dataset.columns:
-                    price_types = {
-                        'farmgate_corngrains_price': 'Farmgate Corn Grains Price',
-                        'retail_corngrains_price': 'Retail Corn Grains Price',
-                        'wholesale_corngrits_price': 'Wholesale Corn Grits Price',
-                        'wholesale_corngrains_price': 'Wholesale Corn Grains Price'
-                    }
+                    price_columns = {
+                        'farmgate_corngrains_price': 'F-1', 
+                        'retail_corngrains_price': 'R-2', 
+                        'wholesale_corngrits_price': 'W-1', 
+                        'wholesale_corngrains_price': 'W-2'
+                        }
                 else: 
                     title = f"Wholesale Prices in the Year {year}"
-                    price_types = { # Default if none exists
-                        'wholesale_corngrits_price': 'Wholesale Corn Grits Price',
-                        'wholesale_corngrains_price': 'Wholesale Corn Grains Price'
-                    }
+                    price_columns = {
+                        'wholesale_corngrits_price': 'W-1', 
+                        'wholesale_corngrains_price': 'W-2'
+                        }
 
                 # Plot each price type
-                for price_col, label in price_types.items():
-                    if price_col in group.columns:  # Check if the column exists
-                        fig.add_trace(
-                            go.Scatter(
+                for price_types, price_id in price_columns.items():
+                    if price_types in group.columns:  # Check if the column exists
+                        # Replace underscores with spaces and remove '_price'
+                        formatted_name = price_types.replace('_', ' ').replace('_price', '').title()
+
+                        fig.add_trace(go.Scatter(
                                 x=group['month'],  # Use month directly
-                                y=group[price_col],
+                                y=group[price_types],
                                 mode='markers+lines',  # Show both markers and lines
-                                name=label,
+                                name=price_id,
                                 marker=dict(size=8), # Adjust marker size
-                                hovertemplate=f"Type: {label}</span><br>Price: %{{y}}<extra></extra>"  # Custom hover 
+                                hovertemplate=f"Type: {formatted_name}<br>Price: %{{y}}<extra></extra>"  # Custom hover 
 
                             ),
                             secondary_y=False, #Important

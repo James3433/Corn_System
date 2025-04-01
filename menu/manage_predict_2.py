@@ -271,23 +271,36 @@ def app():
 
         # Define price types based on dataset columns
         if 'retail_corngrits_price' in dataset.columns:
-            price_columns = ['farmgate_corngrains_price', 'retail_corngrits_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price']
+            price_columns = {
+                'farmgate_corngrains_price': 'F-1', 
+                'retail_corngrits_price': 'R-1', 
+                'wholesale_corngrits_price': 'W-1', 
+                'wholesale_corngrains_price': 'W-2'
+                }
         
         elif 'retail_corngrains_price' in dataset.columns:
-            price_columns = ['farmgate_corngrains_price', 'retail_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price']
-
+            price_columns = {
+                'farmgate_corngrains_price': 'F-1', 
+                'retail_corngrains_price': 'R-2', 
+                'wholesale_corngrits_price': 'W-1', 
+                'wholesale_corngrains_price': 'W-2'
+                }
+            
         # Create Plotly figure
         fig = go.Figure()
 
         # Plot each price type
-        for price_type in price_columns:
-            if price_type in dataset.columns:
+        for price_types, price_id in price_columns.items():
+            if price_types in dataset.columns:
+                # Replace underscores with spaces and remove '_price'
+                formatted_name = price_types.replace('_', ' ').replace('_price', ' ').title()
+
                 fig.add_trace(go.Scatter(
                     x=dataset['Month Year'],
-                    y=dataset[price_type],
+                    y=dataset[price_types],
                     mode='markers+lines',
-                    name=price_type.replace('_', ' ').title(),
-                    hovertemplate=f"Type: {price_type.replace('_', ' ').title()}<br>Price: %{{y}}<extra></extra>",
+                    name=price_id,
+                    hovertemplate=f"Type: {formatted_name}<br>Price: %{{y}}<extra></extra>",
 
                     )
                 )
