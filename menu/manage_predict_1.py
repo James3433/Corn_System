@@ -34,32 +34,28 @@ def app():
 
     st.markdown(f"""
             <style>
-                [data-testid="stVerticalBlock"] {{
-                    border-radius: 2em;
-                    background-color: #5bcd00;
-                    padding: 0px 0px 30px 0px;
+                .st-emotion-cache-bm2z3a {{
+                    padding-top: 10%;
                 }}
 
-                [data-testid="stHorizontalBlock"] {{
-                    margin: 0em 2em;
-                }}
-
-                [data-testid="stMarkdown"] {{
-                    margin-top: -35em;
+                .st-emotion-cache-vdokb0.e1nzilvr4 img{{
                     margin-left: 20em;
+                    margin-top: -43em;
+                }}
+
+                [data-testid="stAppViewBlockContainer"] {{    
+                    border-radius: 10px;
+                    background-color: #8edd27;
+                    border: 2px solid green;
+                    width: 90%;
+                    padding: 1% 5% 5%;
                 }}
 
                 @media (max-width: 768px) {{
-                    .section.main.st-emotion-cache-bm2z3a.ea3mdgi8 {{
-                        padding: 0px;
+                    [data-testid="stAppViewBlockContainer"] {{    
+                        padding: 1em;
                     }}
-
-                    [data-testid="stHorizontalBlock"] {{
-                        margin: 0em;
-                    }}
-            
                 }}
-
             </style>
     """, unsafe_allow_html=True)
 
@@ -148,28 +144,6 @@ def app():
         try:
             predictor = pd.read_csv(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/predictor_dataset.csv')
 
-            # # Polynomial Features (if applicable)
-            # if ((province_name == "davao_de_oro" and target == "farmgate_corngrains_price" and corn_type == "White Corn") or
-            #     (province_name == "davao_del_sur" and target == "retail_corngrits_price" and corn_type == "White Corn") or
-            #     (province_name == "davao_oriental" and target == "retail_corngrits_price" and corn_type == "White Corn") or
-            #     (province_name == "davao_city" and target == "retail_corngrits_price" and corn_type == "White Corn") or
-            #     (province_name == "davao_city" and target == "farmgate_corngrains_price" and corn_type == "Yellow Corn")):
-
-            #     # Optional: Extend x_train and x_test with polynomial features
-            #     poly = PolynomialFeatures(degree=2, include_bias=True)
-                
-            #     # Get column names before transformation
-            #     original_columns = predictor.columns
-                
-            #     # Transform data
-            #     predictor = poly.fit_transform(predictor)
-                
-            #     # Create new column names (you might need to adjust this based on poly.get_feature_names_out())
-            #     new_columns = poly.get_feature_names_out(original_columns)  # Requires scikit-learn >= 1.0
-
-            #     # Convert back to DataFrame
-            #     predictor = pd.DataFrame(predictor, columns=new_columns)
-
             # Load the models
             try:
                 lasso_optimal = joblib.load(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/Lasso_models_for_{target}.joblib')
@@ -219,15 +193,16 @@ def app():
             prediction = RERF_Model(corn_type, folder_type, province_name, target) 
 
         elif user_type == 3:
+            # predict retail price for white_davao_region
             price_type = "Retail Price"
             if corn_type == "White Corn":
-                # predict retail price for white_davao_region
+                # Target 1: Corn Grits
                 folder_type = "For Retail"
                 target = "retail_corngrits_price"
                 prediction = RERF_Model(corn_type, folder_type, province_name, target)
 
             if corn_type == "Yellow Corn":
-                # predict retail price for white_davao_region
+                # Target 2: Corn Grains
                 folder_type = "For Retail"
                 target = "retail_corngrains_price"
                 prediction = RERF_Model(corn_type, folder_type, province_name, target) 
@@ -247,12 +222,13 @@ def app():
             prediction_2 = prediction_2.rename(columns={'price': 'wholesale_corngrains_price'}) #Fix naming
 
             #Concatenate the 2 dataframes
-            prediction_2 = prediction_2.drop(['year','month'], axis=1)
-            prediction = pd.concat([prediction_1, prediction_2], axis=1)
+            prediction = pd.merge(prediction_1, prediction_2)
+
+            target = target_1
 
 
 
-        return prediction, price_type
+        return prediction, price_type, target
 
     
     def manage_plot(dataset, selected_dataset, price_type):
@@ -270,35 +246,48 @@ def app():
         fig = go.Figure()
 
         # Add trace
-        if user_type == 2:  
+        if user_type == 1:  
             price_columns = {
-                'wholesale_corngrits_price': 'W-1', 
-                'wholesale_corngrains_price': 'W-2'
+                'white_farmgate_corngrains_price': 'White Corn', 
+                'yellow_farmgate_corngrains_price': 'Yellow Corn'
                 }
 
-            # Plot each price type
-            for price_types, price_id in price_columns.items():
-                if price_types in dataset.columns:
-                    # Replace underscores with spaces and remove '_price'
-                    formatted_name = price_types.replace('_', ' ').replace('_price', '').title()
+        elif user_type == 3:
+            price_columns = {
+                'white_retail_corngrits_price': 'White Corn', 
+                'yellow_retail_corngrains_price': 'Yellow Corn'
+                }
+        
+        elif user_type == 2:  
+            if 'white_wholesale_corngrits_price' in dataset.columns:
+                price_columns = {
+                    'white_wholesale_corngrits_price': 'White Corn', 
+                    'yellow_wholesale_corngrits_price': 'Yellow Corn'
+                    }
 
-                    fig.add_trace(go.Scatter(
-                        x=dataset['Month Year'],
-                        y=dataset[price_types],
-                        mode='markers+lines',
-                        name=price_id,
-                        hovertemplate=f"Type: {formatted_name}<br>Price: %{{y}}<extra></extra>",
+            elif 'white_wholesale_corngrains_price' in dataset.columns:  
+                price_columns = {
+                    'white_wholesale_corngrains_price': 'White Corn', 
+                    'yellow_wholesale_corngrains_price': 'Yellow Corn'
+                    }
 
-                        )
+
+        # Plot each price type
+        for price_types, price_id in price_columns.items():
+            if price_types in dataset.columns:
+                # Replace underscores with spaces and remove '_price'
+                formatted_name = price_types.replace('_price', ' ').title()
+                formatted_name = formatted_name.replace('_', ' ').title()
+
+                fig.add_trace(go.Scatter(
+                    x=dataset['Month Year'],
+                    y=dataset[price_types],
+                    mode='markers+lines',
+                    name=price_id,
+                    hovertemplate=f"Type: {formatted_name}<br>Price: %{{y}}<extra></extra>",
+
                     )
-        else:
-            fig.add_trace(go.Scatter(
-                x=dataset['Month Year'],
-                y=dataset['price'],
-                mode='markers+lines',
-                name=price_type,
-                hovertemplate=f"Price: %{{y}}<extra></extra>"
-            ))
+                )
 
         # Update layout
         fig.update_layout(
@@ -361,7 +350,7 @@ def app():
             province_id = config['province_id'] # Get the province ID
 
             # Predict dataset using the parameters
-            predict_df, price_type = predict_dataset(corn_type, dataset_name)
+            predict_df, price_type, target = predict_dataset(corn_type, dataset_name)
 
             # Add province_id to predict_df
             predict_df['province_id'] = province_id
@@ -369,7 +358,7 @@ def app():
             # Append the current predict_df to predictions_df
             predictions_df = pd.concat([predictions_df, predict_df], ignore_index=True)
         
-        return predictions_df, price_type
+        return predictions_df, price_type, target
 
 
 
@@ -418,31 +407,76 @@ def app():
         if selected_year == "2 Year":
             year = 24  # Overwrite default only if button is pressed
 
-        with st.expander("White Predictions Plots"):
-            predictions_df, price_type = prediction_dataset(province_configs, selected_dataset, "White Corn")
-
-            # st.dataframe(predictions_df)
-
-            for province_name, config in province_configs.items():
-                province_id = config['province_id']
-                predictions_df_1 = predictions_df[predictions_df['province_id'] == province_id]
-                predictions_df_1 = predictions_df_1.iloc[:year] # Always slice the df, default or button press
-                
-                manage_plot(predictions_df_1, province_name, price_type)
+        w_predictions_df, price_type, target_1 = prediction_dataset(province_configs, selected_dataset, "White Corn")
+        y_predictions_df, price_type, target_2 = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
 
 
-        
-        with st.expander("Yellow Predictions Plots"):
-            predictions_df, price_type = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
+        # st.dataframe(w_predictions_df)
+        # st.dataframe(y_predictions_df)
 
-            # st.dataframe(predictions_df)
+        if user_type == 2:
+            w_predictions_df_1 = w_predictions_df.drop(["wholesale_corngrains_price"], axis=1)
+            y_predictions_df_1 = y_predictions_df.drop(["wholesale_corngrains_price"], axis=1)
 
-            for province_name, config in province_configs.items():
-                province_id = config['province_id']
-                predictions_df_1 = predictions_df[predictions_df['province_id'] == province_id]
-                predictions_df_1 = predictions_df_1.iloc[:year] # Always slice the df, default or button press
-                
-                manage_plot(predictions_df_1, province_name, price_type)
+            w_predictions_df_2 = w_predictions_df.drop(["wholesale_corngrits_price"], axis=1)
+            y_predictions_df_2 = y_predictions_df.drop(["wholesale_corngrits_price"], axis=1)
+
+            with st.expander("Corn Grits Predictions Plots"):
+                for province_name, config in province_configs.items():
+                    province_id = config['province_id']
+
+                    predictions_df_1 = w_predictions_df_1[w_predictions_df_1['province_id'] == province_id]
+                    predictions_df_1 = predictions_df_1.rename(columns={"wholesale_corngrits_price": 'white_wholesale_corngrits_price'})
+                    predictions_df_1 = predictions_df_1.iloc[:year] # Always slice the df, default or button press
+
+                    predictions_df_2 = y_predictions_df_1[y_predictions_df_1['province_id'] == province_id]
+                    predictions_df_2 = predictions_df_2.rename(columns={"wholesale_corngrits_price": 'yellow_wholesale_corngrits_price'})
+                    predictions_df_2 = predictions_df_2.iloc[:year] # Always slice the df, default or button press
+         
+                    merged_predictions_df = pd.merge(predictions_df_1, predictions_df_2)
+
+                    manage_plot(merged_predictions_df, province_name, price_type)
+
+
+            with st.expander("Corn Grains Predictions Plots"):
+                for province_name, config in province_configs.items():
+                    province_id = config['province_id']
+
+                    predictions_df_1 = w_predictions_df_2[w_predictions_df_2['province_id'] == province_id]
+                    predictions_df_1 = predictions_df_1.rename(columns={"wholesale_corngrains_price": 'white_wholesale_corngrains_price'})
+                    predictions_df_1 = predictions_df_1.iloc[:year] # Always slice the df, default or button press
+
+                    predictions_df_2 = y_predictions_df_2[y_predictions_df_2['province_id'] == province_id]
+                    predictions_df_2 = predictions_df_2.rename(columns={"wholesale_corngrains_price": 'yellow_wholesale_corngrains_price'})
+                    predictions_df_2 = predictions_df_2.iloc[:year] # Always slice the df, default or button press
+                    
+                    merged_predictions_df = pd.merge(predictions_df_1, predictions_df_2)
+
+                    manage_plot(merged_predictions_df, province_name, price_type)
+
+
+
+
+        else:
+            with st.expander("Predictions Plots"):
+                for province_name, config in province_configs.items():
+                    province_id = config['province_id']
+
+                    predictions_df_1 = w_predictions_df[w_predictions_df['province_id'] == province_id]
+                    predictions_df_1 = predictions_df_1.rename(columns={"price": f'white_{target_1}'})
+                    predictions_df_1 = predictions_df_1.iloc[:year] # Always slice the df, default or button press
+
+                    predictions_df_2 = y_predictions_df[y_predictions_df['province_id'] == province_id]
+                    predictions_df_2 = predictions_df_2.rename(columns={"price": f'yellow_{target_2}'})
+                    predictions_df_2 = predictions_df_2.iloc[:year] # Always slice the df, default or button press
+                    
+                    merged_predictions_df = pd.merge(predictions_df_1, predictions_df_2)
+
+                    # st.dataframe(predictions_df_1)
+                    # st.dataframe(predictions_df_2)
+                    # st.dataframe(merged_predictions_df)
+
+                    manage_plot(merged_predictions_df, province_name, price_type)
 
 
     if selected_dataset == 'Heatmap':
@@ -456,8 +490,8 @@ def app():
         province_list = ['Davao Region', 'Davao de Oro', 'Davao del Norte', 'Davao del Sur', 'Davao Oriental', 'Davao City']
 
 
-        white_prediction_df, price_type = prediction_dataset(province_configs, selected_dataset, "White Corn")
-        yellow_prediction_df, price_type = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
+        white_prediction_df, price_type, target = prediction_dataset(province_configs, selected_dataset, "White Corn")
+        yellow_prediction_df, price_type, target = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
         
 
         # st.dataframe(white_prediction_df)

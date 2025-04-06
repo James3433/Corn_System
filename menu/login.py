@@ -14,12 +14,15 @@ def app():
 
     st.markdown(f"""
             <style>
-                [data-testid="stVerticalBlockBorderWrapper"] {{
+                .st-emotion-cache-bm2z3a {{
+                    padding-top: 10%;
+                }}
+
+                [data-testid="stAppViewBlockContainer"] {{
                     border-radius: 10px;
                     background-color: #8edd27;
                     border: 2px solid green;
-                    width: 100%;
-                    height: 110%; 
+                    width: 90%;
                     padding: 1% 5%;
                 }}
             </style>

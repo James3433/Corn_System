@@ -17,19 +17,21 @@ def app():
 
     st.markdown(f"""
             <style>
-                [data-testid="stVerticalBlock"] {{
-                    border-radius: 2em;
-                    background-color: #5bcd00;
-                    padding: 0px 0px 30px 0px;
+                [data-testid="stMain"] {{
+                    padding-top: 10%;
                 }}
 
-                [data-testid="stHorizontalBlock"] {{
-                    padding: 2em;
+                [data-testid="stMainBlockContainer"] {{    
+                    border-radius: 10px;
+                    background-color: #8edd27;
+                    border: 2px solid green;
+                    width: 90%;
+                    padding: 1% 5% 5%;
                 }}
 
                 @media (max-width: 768px) {{
-                    [data-testid="stHorizontalBlock"] {{
-                        padding: 1em 0em 1em 1em;
+                    [data-testid="stMainBlockContainer"] {{    
+                        padding: 1em;
                     }}
                 }}
             </style>
@@ -40,7 +42,7 @@ def app():
                   7: 'July', 8: 'August', 9: 'September', 10: 'October', 11: 'November', 12: 'December'}
 
 
-    def admin_plot_view(dataset, selected_region):
+    def monthly_plot_view(dataset, selected_region, price_type):
         if dataset is not None:
             grouped = dataset.groupby('year')
 
@@ -48,43 +50,47 @@ def app():
                 # Create subplots - this is crucial for handling multiple traces cleanly
                 fig = make_subplots(specs=[[{"secondary_y": False}]])  # Use secondary_y if needed for different scales
 
-                title = f"Corn Prices in the Year {year}"
+                title = f"{price_type} in the Year {year}"
 
                 # Define price types based on dataset columns
-                if 'retail_corngrits_price' in dataset.columns:
+                if 'white_farmgate_corngrains_price' in dataset.columns:
                     price_columns = {
-                        'farmgate_corngrains_price': 'F-1', 
-                        'retail_corngrits_price': 'R-1', 
-                        'wholesale_corngrits_price': 'W-1', 
-                        'wholesale_corngrains_price': 'W-2'
+                        'white_farmgate_corngrains_price': 'White Corn', 
+                        'yellow_farmgate_corngrains_price': 'Yellow Corn'
                         }
-                elif 'retail_corngrains_price' in dataset.columns:
+
+                elif 'white_retail_corngrits_price' in dataset.columns:  
                     price_columns = {
-                        'farmgate_corngrains_price': 'F-1', 
-                        'retail_corngrains_price': 'R-2', 
-                        'wholesale_corngrits_price': 'W-1', 
-                        'wholesale_corngrains_price': 'W-2'
+                        'white_retail_corngrits_price': 'White Corn', 
+                        'yellow_retail_corngrains_price': 'Yellow Corn'
                         }
-                else: 
-                    title = f"Wholesale Prices in the Year {year}"
+                    
+                elif 'white_wholesale_corngrits_price' in dataset.columns:  
                     price_columns = {
-                        'wholesale_corngrits_price': 'W-1', 
-                        'wholesale_corngrains_price': 'W-2'
+                        'white_wholesale_corngrits_price': 'White Corn', 
+                        'yellow_wholesale_corngrits_price': 'Yellow Corn'
+                        }
+                    
+                elif 'white_wholesale_corngrains_price' in dataset.columns:  
+                    price_columns = {
+                        'white_wholesale_corngrains_price': 'White Corn', 
+                        'yellow_wholesale_corngrains_price': 'Yellow Corn'
                         }
 
                 # Plot each price type
                 for price_types, price_id in price_columns.items():
                     if price_types in group.columns:  # Check if the column exists
                         # Replace underscores with spaces and remove '_price'
-                        formatted_name = price_types.replace('_', ' ').replace('_price', '').title()
-
+                        formatted_name = price_types.replace('_price', ' ').title()
+                        formatted_name = formatted_name.replace('_', ' ').title()
+                        
                         fig.add_trace(go.Scatter(
                                 x=group['month'],  # Use month directly
                                 y=group[price_types],
                                 mode='markers+lines',  # Show both markers and lines
                                 name=price_id,
                                 marker=dict(size=8), # Adjust marker size
-                                hovertemplate=f"Type: {formatted_name}<br>Price: %{{y}}<extra></extra>"  # Custom hover 
+                                hovertemplate= f"Type: {formatted_name}<br>Price: %{{y}}<extra></extra>"  # Custom hover 
 
                             ),
                             secondary_y=False, #Important
@@ -134,142 +140,12 @@ def app():
                     )
                 )
 
-
-
-                # # Update x-axis properties
-                # fig.update_xaxes(
-                #     title="Month",
-                #     tickangle=-45,
-                #     titlefont=dict(size=15, color="black"),  # X-axis title font
-                #     tickfont=dict(size=12, color="black"),   # X-axis tick labels font
-                #     fixedrange=True                            # Disable zooming
-                # )
-
-                # # Update y-axis properties
-                # fig.update_yaxes(
-                #     title="Price",
-                #     titlefont=dict(size=15, color="black"),  # Y-axis title font
-                #     tickfont=dict(size=12, color="black"),   # Y-axis tick labels font
-                #     fixedrange=True                            # Disable zooming
-                # )
-
-                # # Customize hover label appearance
-                # fig.update_traces(
-                #     hoverlabel=dict(
-                #         bgcolor="rgba(0, 0, 0, 0.8)",  # Background color (semi-transparent black)
-                #         font=dict(
-                #             size=14,                  # Font size
-                #             family="Arial",           # Font family
-                #             color="white"             # Font color
-                #         ),
-                #         bordercolor="yellow"          # Border color of the tooltip
-                #     )
-                # )
-
                 # Display the plot in Streamlit
                 st.plotly_chart(fig, use_container_width=True)  # Make the plot responsive
 
 
 
 
-    def user_plot_view(dataset, price_data):
-        if dataset is not None:
-            # Rename price columns
-            dataset = dataset.rename(columns=lambda x: 'price' if '_price' in x else x)
-
-            grouped = dataset.groupby('year')
-
-            for year, group in reversed(list(grouped)):
-                # Create the Plotly line plot
-                fig = go.Figure(data=[
-                    go.Scatter(
-                        x=group["month"],
-                        y=group["price"],
-                        mode='markers+lines',  # Show both markers and lines
-                        marker=dict(size=8),  # Adjust marker size
-                        hoverinfo='text',  # Use hoverinfo instead of hovertemplate for go.Scatter
-                        hovertext=[f"Price: {price}" for price in group["price"]]
-                       
-                    )
-                ])
-
-                # Update layout for better appearance
-                fig.update_layout(
-                    title=f"{price_data} in the Year {year}",
-                    title_x=0.05,  # Position title at the far left
-                    title_xanchor='left',  # Anchor title to the left
-                    template="plotly_dark",  # Or other base template if you prefer
-                    hovermode="x unified",
-                    plot_bgcolor='#B7E505',  # Yellow-Green for plot area
-                    paper_bgcolor='#B7E505',  # Yellow-Green for surrounding paper
-
-                    legend=dict(
-                        font=dict(
-                            family="Arial",  # Specify font family
-                            color="black"    # Overall font color
-                        )
-                    ),
-
-                    xaxis=dict(
-                        tickangle=-45,
-                        title_font=dict(size=15, color="black"),  # Correct property
-                        tickfont=dict(size=12, color="black"),
-                        fixedrange=True # Disable zooming
-                    ),
-
-                    yaxis=dict(
-                        title_font=dict(size=15, color="black"),  # Correct property
-                        tickfont=dict(size=12, color="black"), # Y-axis tick labels font
-                        fixedrange=True # Disable zooming
-                    ),
-
-                    title_font=dict(size=20, color="black"), # Title font (overrides general font)
-
-                    # Customize hover label appearance
-                        hoverlabel=dict(
-                            bgcolor="rgba(0, 0, 0, 0.8)", # Background color (semi-transparent black)
-                            font=dict(
-                            size=14, # Font size
-                            family="Arial", # Font family
-                            color="white" # Font color
-                        ),
-                        bordercolor="yellow" # Border color of the tooltip
-                    )
-                )
-
-
-                # # Update x-axis properties
-                # fig.update_xaxes(
-                #     title="Month",
-                #     tickangle=-45,
-                #     titlefont=dict(size=15, color="black"),  # X-axis title font
-                #     tickfont=dict(size=12, color="black"),   # X-axis tick labels font
-                #     fixedrange=True                            # Disable zooming
-                # )
-
-                # # Update y-axis properties
-                # fig.update_yaxes(
-                #     title="Price",
-                #     titlefont=dict(size=15, color="black"),  # Y-axis title font
-                #     tickfont=dict(size=12, color="black"),   # Y-axis tick labels font
-                #     fixedrange=True                            # Disable zooming
-                # )
-
-                # # Customize hover label appearance
-                # fig.update_traces(
-                #     hoverlabel=dict(
-                #         bgcolor="rgba(0, 0, 0, 0.8)",  # Background color (semi-transparent black)
-                #         font=dict(
-                #             size=14,                  # Font size
-                #             family="Arial",           # Font family
-                #             color="white"             # Font color
-                #         ),
-                #         bordercolor="yellow"          # Border color of the tooltip
-                #     )
-                # )
-
-                # Display the plot in Streamlit
-                st.plotly_chart(fig, use_container_width=True)  # Make the plot responsive
 
 
 
@@ -304,67 +180,98 @@ def app():
             st.rerun()
         st.stop()  # Prevents further execution
 
-    w_df.drop(['retail_corngrains_price'], axis=1, inplace=True)
-    y_df.drop(['retail_corngrits_price'], axis=1, inplace=True)
-
-
     # Map the month numbers to their full names
     w_df['month'] = w_df['month'].map(month_full).astype(str)
     y_df['month'] = y_df['month'].map(month_full).astype(str)
 
-    # Adjust DataFrames based on user type
-    price_data = ""
-    if user_type == 1:
-        price_data = "Farmgate Price"
-        w_df.drop(['retail_corngrits_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price'], axis=1, inplace=True)
-        y_df.drop(['retail_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price'], axis=1, inplace=True)
+    # st.dataframe(w_df)
+    # st.dataframe(y_df)
 
-    elif user_type == 3:
-        price_data = "Retail Price"
-        w_df.drop(['farmgate_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price'], axis=1, inplace=True)
-        y_df.drop(['farmgate_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price'], axis=1, inplace=True)
-        
+# ================================================[ Farmgate Plot View ]=============================================================
+    wf_df = w_df.drop(['retail_corngrits_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price'], axis=1)
+    yf_df = y_df.drop(['retail_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price'], axis=1) 
 
-    elif user_type == 2:
-        price_data = "Wholesale Price"
-        w_df.drop(['farmgate_corngrains_price', 'retail_corngrits_price'], axis=1, inplace=True)
-        y_df.drop(['farmgate_corngrains_price', 'retail_corngrains_price'], axis=1, inplace=True)
+    wf_df = wf_df.rename(columns={'farmgate_corngrains_price': 'white_farmgate_corngrains_price'}) #Fix naming
+    yf_df = yf_df.rename(columns={'farmgate_corngrains_price': 'yellow_farmgate_corngrains_price'}) #Fix naming
+
+    price_type_1 = "Farmgate Price"
+    farmgate_df = pd.merge(wf_df, yf_df)
+
+# =================================================[ Retail Plot View ]==============================================================
+    wr_df = w_df.drop(['farmgate_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price'], axis=1)
+    yr_df = y_df.drop(['farmgate_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price'], axis=1)
+
+    wr_df = wr_df.rename(columns={'retail_corngrits_price': 'white_retail_corngrits_price'}) #Fix naming
+    yr_df = yr_df.rename(columns={'retail_corngrains_price': 'yellow_retail_corngrains_price'}) #Fix naming
+
+    price_type_2 = "Retail Price"
+    retail_df = pd.merge(wr_df, yr_df)
 
 
-    if user_type == 2 or user_type == 4:
-        
-        with st.expander("White Predictions Plots"):
-            admin_plot_view(w_df, selected_region)
-        
-        with st.expander("Yellow Predictions Plots"):
-            admin_plot_view(y_df, selected_region)
-    else:
-        
-        with st.expander("White Predictions Plots"):
-            user_plot_view(w_df, price_data)
+# =============================================[ Wholesale Corngrits Plot View ]=====================================================
+    ww1_df = w_df.drop(['farmgate_corngrains_price', 'wholesale_corngrains_price', 'retail_corngrits_price'], axis=1)
+    yw1_df = y_df.drop(['farmgate_corngrains_price', 'wholesale_corngrains_price', 'retail_corngrains_price'], axis=1)
+
+    ww1_df = ww1_df.rename(columns={'wholesale_corngrits_price': 'white_wholesale_corngrits_price'}) #Fix naming
+    yw1_df = yw1_df.rename(columns={'wholesale_corngrits_price': 'yellow_wholesale_corngrits_price'}) #Fix naming
+
+    price_type_3 = "Wholesale Corngrits Price"
+    wholasale_df_1 = pd.merge(ww1_df, yw1_df)
+
+# =============================================[ Wholesale Corngrains Plot View ]===================================================
+    ww2_df = w_df.drop(['farmgate_corngrains_price', 'wholesale_corngrits_price', 'retail_corngrits_price'], axis=1)
+    yw2_df = y_df.drop(['farmgate_corngrains_price', 'wholesale_corngrits_price', 'retail_corngrains_price'], axis=1)
+
+    ww2_df = ww2_df.rename(columns={'wholesale_corngrains_price': 'white_wholesale_corngrains_price'}) #Fix naming
+    yw2_df = yw2_df.rename(columns={'wholesale_corngrains_price': 'yellow_wholesale_corngrains_price'}) #Fix naming
     
-        with st.expander("Yellow Predictions Plots"):
-            user_plot_view(y_df, price_data)
+    price_type_4 = "Wholesale Corngrains Price"
+    wholasale_df_2 = pd.merge(ww2_df, yw2_df)
 
 
+    # Adjust DataFrames based on user type
+    col_1, col_2 = st.columns(2)
+    col_3, col_4 = st.columns(2)
 
-    # if user_type == 4 or user_type == 3:
-    #     col1, col2 = st.columns(2)
-    #     with col1:
-    #         st.header("White Corn")
-    #         with st.expander("White Predictions Plots"):
-    #             admin_plot_view(white_dataset, selected_region)
-    #     with col2:
-    #         st.header("Yellow Corn")
-    #         with st.expander("Yellow Predictions Plots"):
-    #             admin_plot_view(yellow_dataset, selected_region)
-    # else:
-    #     col1, col2 = st.columns(2)
-    #     with col1:
-    #         st.header("White Corn")
-    #         with st.expander("White Predictions Plots"):
-    #             user_plot_view(white_dataset, price_data)
-    #     with col2:
-    #         st.header("Yellow Corn")
-    #         with st.expander("Yellow Predictions Plots"):
-    #             user_plot_view(yellow_dataset, price_data)import pandas as pd
+
+# =======================================[ Farmers Plot View ]====================================================
+    if user_type == 1:
+        with st.expander("Farmgate Predictions Plots"):
+            monthly_plot_view(farmgate_df, selected_region, price_type_1)
+
+
+# =======================================[ Consumer Plot View ]====================================================
+    elif user_type == 3:
+        with st.expander("Retail Predictions Plots"):
+            monthly_plot_view(retail_df, selected_region, price_type_2)
+
+
+# =======================================[ Trader Plot View ]====================================================
+    elif user_type == 2:
+        with col_1:
+            with st.expander("Wholesale Corngrits Monthly Plots"):
+                monthly_plot_view(wholasale_df_1, selected_region, price_type_3)
+        
+        with col_2:
+            with st.expander("Wholesale Corngrains Monthly Plots"):
+                monthly_plot_view(wholasale_df_2, selected_region, price_type_4)
+
+
+# =======================================[ Admin Plot View ]====================================================
+    elif user_type == 4:
+        with col_1:
+            with st.expander("Farmgate Monthly Plots"):
+                monthly_plot_view(farmgate_df, selected_region, price_type_1)
+        
+        with col_2:
+            with st.expander("Retail Monthly Plots"):
+                monthly_plot_view(retail_df, selected_region, price_type_2)
+
+        with col_3:
+            with st.expander("Wholesale Corngrits Monthly Plots"):
+                monthly_plot_view(wholasale_df_1, selected_region, price_type_3)
+        
+        with col_4:
+            with st.expander("Wholesale Corngrains Monthly Plots"):
+                monthly_plot_view(wholasale_df_2, selected_region, price_type_4)
+

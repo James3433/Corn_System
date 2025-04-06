@@ -4,6 +4,8 @@ import streamlit as st
 import joblib
 import httpx
 
+from streamlit_modal import Modal
+
 from supabase_connect import get_user_name, get_user_by_user_type
 from supabase_connect import get_fertilizer_data, get_weather_data, get_white_corn_price_data, get_yellow_corn_price_data, get_white_corn_production_data, get_yellow_corn_production_data
 from supabase_connect import submit_predictions_fertilizer, submit_predictions_price, submit_predictions_production, submit_predictions_weather
@@ -163,6 +165,62 @@ def app():
 
 
 
+    # Create a modal instance
+    modal = Modal("Submit Data", key="submit-data-modal", padding=20)
+
+    # Render modal content for submiting data to the database
+    if modal.is_open():
+        with modal.container():
+            st.error("Are you sure you want to submit this data?")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button('Yes'):
+                    st.session_state.input_data['month'] = st.session_state.input_data['month'].map(month_mapping)                                       
+                    st.session_state.input_data['province_id'] = st.session_state.input_data['province_id'].map(provinces_num)
+                    st.session_state.input_data['corn_type'] = st.session_state.input_data['corn_type'].map(corn_type)
+
+                    if selected_dataset2 == "Fertilizer Price":
+                        submit_predictions_fertilizer(st.session_state.input_data, user_id)
+                        st.session_state.input_data = fertilizer_database
+
+                    elif selected_dataset2 == "Corn Price":
+                        submit_predictions_price(st.session_state.input_data, user_id)
+                        st.session_state.input_data = price_database
+
+                    elif selected_dataset2 == "Corn Production":
+                        submit_predictions_production(st.session_state.input_data, user_id)
+                        st.session_state.input_data = production_database
+                        
+                    elif selected_dataset2 == "Weather Info":
+                        st.session_state.input_data['conditions'] = st.session_state.input_data['conditions'].map(conditions_num)
+                        submit_predictions_weather(st.session_state.input_data, user_id)
+                        st.session_state.input_data = weather_database
+
+
+                    st.session_state.form_key = 0
+                    st.session_state.current_prov_index = 0
+                    st.session_state.selected_dataset2_num += 1
+
+                    # Clear text inputs
+                    clear_text_input()
+
+                    modal.close()  # Close modal
+                    st.rerun() # Rerun to reflect changes
+
+                with col2:
+                    if st.button('No'):
+                        st.session_state.form_key = 0
+                        st.session_state.current_prov_index = 0
+
+                        # Clear text inputs
+                        clear_text_input()
+
+                        modal.close()  # Close modal
+                        st.rerun() # Rerun to reflect changes
+
+
+
+
     if selected_dataset2 != "Train Data":
 
 
@@ -176,11 +234,18 @@ def app():
 
         # Get the current year and month
         last_year = dataset['year'].iloc[-1]
-        current_year = last_year
+
         # Get the last row of the 'month' column
         last_month = dataset['month'].iloc[-1]
-        current_month = last_month + 1
 
+        current_month = (last_month) % 12 + 1  # Wrap around using modulo
+        current_year = last_year + (last_month) // 12  # Increment year if month exceeds December
+    
+        # Reverse the month mapping dictionary
+        month_to_string = {v: k for k, v in month_mapping.items()}
+
+        # Convert current month to string
+        current_month = month_to_string[current_month]
 
         col1, col2 = st.columns((1.5, 1.5))
 
@@ -216,10 +281,6 @@ def app():
 
                 with col4:
                     Month = st.text_input(label="Month", placeholder=f"{current_month}", key=f"month_input", disabled=True)
-
-                    # Check if Month input is valid and adjust Year accordingly
-                    if current_month < last_month:
-                        current_year = int(last_year) + 1  # Increment year by 1 if Month is less than last_month
 
                 with col5:
                     Year = st.text_input(label="Year", placeholder=f"{current_year}", key=f"year_input", disabled=True)
@@ -293,6 +354,8 @@ def app():
                         conditions = st.selectbox("Condiions:", ['Partly Cloudy', 'Rain, Partially Cloudy', 'Rain, Overcast', 'Overcast'])
 
                 
+
+
                 col_1, col_2 = st.columns(2)
 
                 with col_1:
@@ -305,10 +368,12 @@ def app():
                 with col_2:
                     if st.session_state.current_prov_index != 0:
                         # Get the current province based on the index
-                        current_prov = provinces[st.session_state.current_prov_index -1]
+                        remove_current_prov = provinces[st.session_state.current_prov_index - 1]
 
                         # Remove button logic
-                        remove_data = st.form_submit_button(f'Remove {current_prov} data')
+                        remove_data = st.form_submit_button(f'Remove {remove_current_prov} data')
+
+
 
 
                 if st.session_state.current_prov_index <= len(provinces) - 1:
@@ -457,36 +522,10 @@ def app():
 
                 else:
                     if sent_data_to_database:
-                        
-                        st.session_state.input_data['province_id'] = st.session_state.input_data['province_id'].map(provinces_num)
-                        st.session_state.input_data['corn_type'] = st.session_state.input_data['corn_type'].map(corn_type)
 
-                        if selected_dataset2 == "Fertilizer Price":
-                            submit_predictions_fertilizer(st.session_state.input_data, user_id)
-                            st.session_state.input_data = fertilizer_database
-
-                        elif selected_dataset2 == "Corn Price":
-                            submit_predictions_price(st.session_state.input_data, user_id)
-                            st.session_state.input_data = price_database
-
-                        elif selected_dataset2 == "Corn Production":
-                            submit_predictions_production(st.session_state.input_data, user_id)
-                            st.session_state.input_data = production_database
-                            
-                        elif selected_dataset2 == "Weather Info":
-                            st.session_state.input_data['conditions'] = st.session_state.input_data['conditions'].map(conditions_num)
-                            submit_predictions_weather(st.session_state.input_data, user_id)
-                            st.session_state.input_data = weather_database
-
-
-                        st.session_state.form_key = 0
-                        st.session_state.current_prov_index = 0
-                        st.session_state.selected_dataset2_num += 1
-
-                        # Clear text inputs
-                        clear_text_input()
-
-                        st.rerun() # Rerun to reflect changes
+                        # Opening modal abut choosing to countinue to submit data or cancel it out
+                        modal.open()
+ 
 
                 if st.session_state.current_prov_index != 0:
                     # Remove button logic
@@ -504,6 +543,7 @@ def app():
 
                         else:
                             st.warning(f"No data found for {current_prov} to remove.")
+
 
                 # Display updated DataFrame again after removal
                 st.dataframe(st.session_state.input_data)
@@ -574,25 +614,6 @@ def app():
         # Simulated training process
         if st.session_state["training"]:
             st.success("Training model...")
-# # ==============================================[BUILD DATASET]=================================================================================   
-
-#                 def build_dataset(province_id, corn_type, dataset1, dataset2, dataset3, dataset4):
-    
-#                     # Filter datasets based on province_id and corn_type
-#                     filtered_dataset1 = dataset1[(dataset1['province_id'] == province_id) & (dataset1['corn_type'] == corn_type)]
-#                     filtered_dataset2 = dataset2[(dataset2['province_id'] == province_id) & (dataset2['corn_type'] == corn_type)]
-#                     filtered_dataset3 = dataset3[(dataset3['province_id'] == province_id) & (dataset3['corn_type'] == corn_type)]
-#                     filtered_dataset4 = dataset4[(dataset4['province_id'] == province_id) & (dataset4['corn_type'] == corn_type)]
-    
-#                     # Merge datasets on 'user_id' (or another common key)
-#                     merged_dataset = pd.merge(filtered_dataset1, filtered_dataset2)
-#                     merged_dataset = pd.merge(merged_dataset, filtered_dataset3)
-#                     merged_dataset = pd.merge(merged_dataset, filtered_dataset4)
-#                     # merged_dataset = merged_dataset.drop(['province_id', 'user_id', 'corn_type'], axis=1)
-#                     merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
-    
-#                     return merged_dataset
-
 
 # # ==============================================[PREDICTS X TEST]=================================================================================   
 
@@ -676,17 +697,6 @@ def app():
 
                 X = X.drop('ds', axis=1)
                 
-
-                # if ((province_name == "davao_de_oro" and target == "farmgate_corngrains_price" and corn_type == "White Corn") or
-                #     (province_name == "davao_del_sur" and target == "retail_corngrits_price" and corn_type == "White Corn") or
-                #     (province_name == "davao_oriental" and target == "retail_corngrits_price" and corn_type == "White Corn") or
-                #     (province_name == "davao_city" and target == "retail_corngrits_price" and corn_type == "White Corn") or
-                #     (province_name == "davao_city" and target == "farmgate_corngrains_price" and corn_type == "Yellow Corn")):
-
-                #     # Optional: Extend x_train and x_test with polynomial features
-                #     x_train, x_test = extend_predictors(x_train, x_test)
-
-
                 # Step 2: Perform k-fold cross-validation for Lasso to find optimal λ 
                 lasso_cv = LassoCV(alphas=np.logspace(-6, 2, 100), cv=5, random_state=0)
                 lasso_cv.fit(X, Y)
@@ -732,23 +742,6 @@ def app():
                     
                 with open(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/RF_models_for_{target}.joblib', 'wb') as f:
                     joblib.dump(rf_optimal, f)
-
-                # # Predictions on test set using both models
-                # y_pred_lasso_test = lasso_optimal.predict(X_test)
-                                
-                # # Final predictions from Random Forest on test set residuals
-                # y_pred_rf_test = rf_optimal.predict(X_test)
-                
-                # # Combine predictions from Lasso and Random Forest for final prediction
-                # final_predictions = y_pred_lasso_test + y_pred_rf_test
-                
-                # # Evaluation metrics can be calculated here (e.g., MAE, MSE)
-                # mae = np.round(mean_absolute_error(y_test, final_predictions), 4)
-                # mse = np.round(mean_squared_error(y_test, final_predictions), 4)
-                # r2 = np.round(r2_score(y_test, final_predictions), 4)
-                            
-                # return r2
-
 
 
             try:

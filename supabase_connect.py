@@ -20,6 +20,12 @@ def get_corn_price(corn_type, province_id):
 
     response = pd.DataFrame(response.data)
 
+    if corn_type == 1:
+        response = response.drop(['id', 'province_id', 'corn_type', 'retail_corngrains_price'], axis=1)
+
+    elif corn_type == 2:
+        response = response.drop(['id', 'province_id', 'corn_type', 'retail_corngrits_price'], axis=1)
+
     return response
 
 
