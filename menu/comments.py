@@ -16,7 +16,7 @@ def app():
     img_2 = get_img_as_base64("images/trader_PNG.png")
     img_3 = get_img_as_base64("images/user.png")
 
-
+    main_user_id = st.session_state.get('user_id', 1)
     fname = st.session_state.get('fname', 'First Name')
     lname = st.session_state.get('lname', 'Last Name')
     user_type = st.session_state.get('user_type', 'User Type')
@@ -115,10 +115,11 @@ def app():
                 st.error("Please input comments first.")  # Show error message
             else:
                 # Proceed to insert comments into the database
-                response = insert_comments(user_id, comments)
+                response = insert_comments(main_user_id, comments)
                 
                 if response.data:  # Successful insertion
                     st.success("Comments added successfully!")
+                    st.rerun()
                 elif response.error:
                     st.error("An error occurred while adding your comments.")
 
