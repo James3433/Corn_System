@@ -43,7 +43,8 @@ def app():
                 .comment_box{{
                     border-radius: 10px;
                     background-color: #578809;
-                    padding: 0% 5%
+                    padding: 1% 5%;
+                    margin-bottom: 2%;
                 }}
                 .comment_box p{{
                     margin-left: 40px;
