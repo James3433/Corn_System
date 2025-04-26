@@ -72,7 +72,7 @@ def app():
 
 
     if "selected_dataset2_num" not in st.session_state:
-        st.session_state.selected_dataset2_num = 4
+        st.session_state.selected_dataset2_num = 0
 
 
     
@@ -715,8 +715,7 @@ def app():
                 # Step 3: Fit Random Forest on residuals from Lasso
                 param_grid_rf = {
                     'max_features': ["sqrt", "log2", None],
-                    'min_samples_leaf': [1, 3, 5],
-                    'min_samples_split': [2, 3, 4]
+                    'min_samples_leaf': [1, 3, 5]
                     }
                 
                 grid_search_rf = GridSearchCV(estimator=RandomForestRegressor(random_state=42), 
@@ -732,12 +731,11 @@ def app():
                 best_params_rf = grid_search_rf.best_params_
 
 
-                s_star1 = best_params_rf['min_samples_split']
-                s_star2 = best_params_rf['min_samples_leaf']
+                s_star = best_params_rf['min_samples_leaf']
                 m_star = best_params_rf['max_features']
                 
                 # Fit Random Forest with optimal parameters on training data
-                rf_optimal = RandomForestRegressor(min_samples_split=s_star1, min_samples_leaf=s_star2, max_features=m_star, random_state=42)
+                rf_optimal = RandomForestRegressor(min_samples_leaf=s_star, max_features=m_star, random_state=42)
                 rf_optimal.fit(X, residuals_train)
                 
                 
