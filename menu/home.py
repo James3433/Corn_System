@@ -27,10 +27,6 @@ def app():
             <p> Here we help you with your problems about corn</p>
         </div>
         <div class="info">
-            <div class="info_1">
-                <img src="data:image/png;base64,{img_1}" alt="A beautiful landscape" width="100px" height="100px">
-                <p>This website helps the PSa to record futuristic data in a short period of time.</p>
-            </div>
             <div class="info_2">
                 <img src="data:image/png;base64,{img_2}" alt="A beautiful landscape" width="100px" height="100px">
                 <p>This website helps the consumers to prepare changes of corn price in a short period of time.</p>
