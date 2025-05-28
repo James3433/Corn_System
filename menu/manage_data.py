@@ -44,9 +44,13 @@ def app():
 
     fertilizer_database= pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "ammophos_price", "ammosul_price", "complete_price", "urea_price"])
 
-    weather_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "temp", "feelslike", "dew", "humidity", "precip", "precipprob","precipcover", 'windgust', 
-                                    "windspeed", "winddir", "sealevelpressure","visibility", "solarradiation", "solarenergy", "uvindex", "severerisk", "cloudcover", "conditions"])
+    # weather_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "temp", "feelslike", "dew", "humidity", "precip", "precipprob","precipcover", 'windgust', 
+    #                                 "windspeed", "winddir", "sealevelpressure","visibility", "solarradiation", "solarenergy", "uvindex", "severerisk", "cloudcover", "conditions"])
     
+    weather_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "feelslike", "dew", "humidity", "precip", "precipcover", 
+                                    'windgust', "windspeed", "winddir", "sealevelpressure", "visibility", "severerisk", "conditions"])
+    
+
     price_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "farmgate_corngrains_price", "retail_corngrits_price", "wholesale_corngrits_price"])
     
     production_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "corn_production"])
@@ -66,8 +70,8 @@ def app():
         Ammophos, Ammosul, Complete, Urea = "", "", "", ""
         Farmgate_Price, Retail_Price, Wholesale_Price = "", "", ""
         Production = ""
-        temp_max, temp_min, temp, dew, humidity, precip, precipprob, precipcover, windspeed = "", "", "", "", "", "", "", "", ""
-        sealevelpressure, visibility, solarradiation, uvindex, severerisk, cloudcover, conditions = "", "", "", "", "", "", ""
+        feelslike, dew, humidity, precip, precipcover, windspeed = "", "", "", "", "", ""
+        sealevelpressure, visibility, severerisk, conditions = "", "", "", ""
 
 
 
@@ -331,27 +335,21 @@ def app():
                     col_1, col_2, col_3 = st.columns(3)
                     
                     with col_1:
-                        temp = st.text_input(label="Temperature", placeholder="Temperature", key=f"temp_input")
                         feelslike = st.text_input(label="Feels Like Temp.", placeholder="Feels Like Temp.", key=f"feelslike_input")
                         dew = st.text_input(label="Dew", placeholder="Dew", key=f"dew_input")
                         humidity = st.text_input(label="Humidity", placeholder="Humidity", key=f"humidity_input")
                         precip = st.text_input(label="Precipitation", placeholder="Precipitation", key=f"precip_input")
-                        precipprob = st.text_input(label="Precipitation Probability", placeholder="Precipitation Probability", key=f"preciprob_input")
                         
                     with col_2:
                         precipcover = st.text_input(label="Precipitation Cover", placeholder="Precipitation Cover", key=f"precov_input")
                         windgust = st.text_input(label="Wind Gust", placeholder="Wind Gust", key=f"windgust_input")
                         windspeed = st.text_input(label="Wind Speed", placeholder="Wind Speed", key=f"windspeed_input")
                         winddir = st.text_input(label="Wind Direction", placeholder="Wind Direction", key=f"winddir_input")
-                        sealevelpressure = st.text_input(label="Sea Level Pressure", placeholder="Sea Level Pressure", key=f"sea_level_input")
-                        visibility = st.text_input(label="Visibility", placeholder="Visibility", key=f"visibility_input")
                     
                     with col_3:
-                        solarradiation = st.text_input(label="Solar Radiation", placeholder="Solar Radiation", key=f"solar_radiation_input")
-                        solarenergy = st.text_input(label="Solar Energy", placeholder="Solar Energy", key=f"solar_energy_input")
-                        uvindex = st.text_input(label="Ultraviolet Index", placeholder="Ultraviolet Index", key=f"uv_index_input")
+                        sealevelpressure = st.text_input(label="Sea Level Pressure", placeholder="Sea Level Pressure", key=f"sea_level_input")
+                        visibility = st.text_input(label="Visibility", placeholder="Visibility", key=f"visibility_input")
                         severerisk = st.text_input(label="Severe Risk", placeholder="Severe Risk", key=f"severerisk_input")
-                        cloudcover = st.text_input(label="Clould Cover", placeholder="Clould Cover", key=f"cloud_cover_input")
                         conditions = st.selectbox("Condiions:", ['Partly Cloudy', 'Rain, Partially Cloudy', 'Rain, Overcast', 'Overcast'])
 
                 
@@ -474,8 +472,8 @@ def app():
                             }
 
                         elif selected_dataset2 == "Weather Info":
-                            fields = [temp, feelslike, dew, humidity, precip, precipprob, precipcover, windgust, windspeed, winddir, sealevelpressure, visibility, solarradiation, solarenergy, uvindex, severerisk, cloudcover]
-                            field_names = ["temp", "feelslike", "dew", "humidity", "precip", "precipprob", "precipcover", "windgust", "windspeed", "winddir", "sealevelpressure", "visibility", "solarradiation", "solarenergy", "uvindex", "severerisk", "cloudcover"]
+                            fields = [feelslike, dew, humidity, precip, precipcover, windgust, windspeed, winddir, sealevelpressure, visibility, severerisk]
+                            field_names = ["feelslike", "dew", "humidity", "precip", "precipcover", "windgust", "windspeed", "winddir", "sealevelpressure", "visibility", "severerisk"]
                             
                             # Attempt to convert all fields to float
                             try:
@@ -778,48 +776,40 @@ def app():
             # st.dataframe(white_corn_davao_region)
             # st.dataframe(white_corn_davao_region_dataset)
 
-            w_f_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'temp', 
-                        'feelslike', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover', 'windgust', 'windspeed', 'winddir',
-                        'sealevelpressure', 'visibility', 'solarradiation', 'solarenergy', 'uvindex', 'severerisk', 'cloudcover', 
-                        'conditions', 'retail_corngrits_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price']
+            w_f_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'feelslike', 'dew', 
+                        'humidity', 'precip', 'precipcover', 'windgust', 'windspeed', 'winddir','sealevelpressure', 'visibility', 
+                        'severerisk', 'conditions', 'retail_corngrits_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price']
 
-            w_r_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'temp', 
-                        'feelslike', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover', 'windgust', 'windspeed', 'winddir',
-                        'sealevelpressure', 'visibility', 'solarradiation', 'solarenergy', 'uvindex', 'severerisk', 'cloudcover', 
-                        'conditions', 'farmgate_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price']
+            w_r_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'feelslike', 'dew', 
+                        'humidity', 'precip', 'precipcover', 'windgust', 'windspeed', 'winddir','sealevelpressure', 'visibility', 
+                        'severerisk', 'conditions', 'farmgate_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price']
 
-            w_w_predictor_1 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'temp', 
-                        'feelslike', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover', 'windgust', 'windspeed', 'winddir',
-                        'sealevelpressure', 'visibility', 'solarradiation', 'solarenergy', 'uvindex', 'severerisk', 'cloudcover', 
-                        'conditions', 'farmgate_corngrains_price', 'retail_corngrits_price', 'wholesale_corngrains_price']
+            w_w_predictor_1 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'feelslike', 'dew', 
+                        'humidity', 'precip', 'precipcover', 'windgust', 'windspeed', 'winddir','sealevelpressure', 'visibility', 
+                        'severerisk', 'conditions', 'farmgate_corngrains_price', 'retail_corngrits_price', 'wholesale_corngrains_price']
 
-            w_w_predictor_2 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'temp', 
-                        'feelslike', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover', 'windgust', 'windspeed', 'winddir',
-                        'sealevelpressure', 'visibility', 'solarradiation', 'solarenergy', 'uvindex', 'severerisk', 'cloudcover', 
-                        'conditions', 'farmgate_corngrains_price', 'retail_corngrits_price', 'wholesale_corngrits_price']
+            w_w_predictor_2 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'feelslike', 'dew', 
+                        'humidity', 'precip', 'precipcover', 'windgust', 'windspeed', 'winddir','sealevelpressure', 'visibility', 
+                        'severerisk', 'conditions', 'farmgate_corngrains_price', 'retail_corngrits_price', 'wholesale_corngrits_price']
 
 
 
 
-            y_f_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'temp', 
-                        'feelslike', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover', 'windgust', 'windspeed', 'winddir',
-                        'sealevelpressure', 'visibility', 'solarradiation', 'solarenergy', 'uvindex', 'severerisk', 'cloudcover', 
-                        'conditions', 'retail_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price']
+            y_f_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'feelslike', 'dew', 
+                        'humidity', 'precip', 'precipcover', 'windgust', 'windspeed', 'winddir','sealevelpressure', 'visibility', 
+                        'severerisk', 'conditions', 'retail_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price']
 
-            y_r_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'temp', 
-                        'feelslike', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover', 'windgust', 'windspeed', 'winddir',
-                        'sealevelpressure', 'visibility', 'solarradiation', 'solarenergy', 'uvindex', 'severerisk', 'cloudcover', 
-                        'conditions', 'farmgate_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price']
+            y_r_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'feelslike', 'dew', 
+                        'humidity', 'precip', 'precipcover', 'windgust', 'windspeed', 'winddir','sealevelpressure', 'visibility', 
+                        'severerisk', 'conditions', 'farmgate_corngrains_price', 'wholesale_corngrits_price', 'wholesale_corngrains_price']
 
-            y_w_predictor_1 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'temp', 
-                        'feelslike', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover', 'windgust', 'windspeed', 'winddir',
-                        'sealevelpressure', 'visibility', 'solarradiation', 'solarenergy', 'uvindex', 'severerisk', 'cloudcover', 
-                        'conditions', 'farmgate_corngrains_price', 'retail_corngrains_price', 'wholesale_corngrains_price']
+            y_w_predictor_1 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'feelslike', 'dew', 
+                        'humidity', 'precip', 'precipcover', 'windgust', 'windspeed', 'winddir','sealevelpressure', 'visibility', 
+                        'severerisk', 'conditions', 'farmgate_corngrains_price', 'retail_corngrains_price', 'wholesale_corngrains_price']
 
-            y_w_predictor_2 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'temp', 
-                        'feelslike', 'dew', 'humidity', 'precip', 'precipprob', 'precipcover', 'windgust', 'windspeed', 'winddir',
-                        'sealevelpressure', 'visibility', 'solarradiation', 'solarenergy', 'uvindex', 'severerisk', 'cloudcover', 
-                        'conditions', 'farmgate_corngrains_price', 'retail_corngrains_price', 'wholesale_corngrits_price']
+            y_w_predictor_2 = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'feelslike', 'dew', 
+                        'humidity', 'precip', 'precipcover', 'windgust', 'windspeed', 'winddir','sealevelpressure', 'visibility', 
+                        'severerisk', 'conditions', 'farmgate_corngrains_price', 'retail_corngrains_price', 'wholesale_corngrits_price']
 
 
 

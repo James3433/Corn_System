@@ -508,23 +508,17 @@ def submit_predictions_weather(predictions_df, user_id):
             'month': int(row['month']),  # Assuming 'Month' is a column in predictions_df
             'province_id': int(row['province_id']),  # Assuming 'province_id' is already included
             'corn_type': int(row['corn_type']),  # Assuming 'corn_type' is already included
-            'temp': float(row['temp']),  # Assuming this column exists
             'feelslike': float(row['feelslike']),  # Assuming this column exists
             'dew': float(row['dew']),  # Assuming this column exists
             'humidity': float(row['humidity']),  # Assuming this column exists
             'precip': float(row['precip']),  # Assuming this column exists
-            'precipprob': float(row['precipprob']),  # Assuming this column exists
             'precipcover': float(row['precipcover']),  # Assuming this column exists
             'windgust': float(row['windgust']),  # Assuming this column exists
             'windspeed': float(row['windspeed']),  # Assuming this column exists
             'winddir': float(row['winddir']),  # Assuming this column exists
             'sealevelpressure': float(row['sealevelpressure']),  # Assuming this column exists
             'visibility': float(row['visibility']),  # Assuming this column exists
-            'solarradiation': float(row['solarradiation']),  # Assuming this column exists
-            'solarenergy': float(row['solarenergy']),  # Assuming this column exists
-            'uvindex': float(row['uvindex']),  # Assuming this column exists
             'severerisk': float(row['severerisk']),  # Assuming this column exists
-            'cloudcover': float(row['cloudcover']),  # Assuming this column exists
             'conditions': float(row['conditions']),  # Assuming this column exists
             'user_id': user_id  # Pass the user ID as needed
         })

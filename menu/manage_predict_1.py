@@ -10,12 +10,10 @@ import geopandas as gpd
 import joblib
 
 from branca.colormap import linear
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
-from plotly.subplots import make_subplots
 
 def app():
 
