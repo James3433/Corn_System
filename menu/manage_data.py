@@ -209,9 +209,7 @@ def app():
 
                 with col2:
                     if st.button('No'):
-                        st.session_state.form_key = 0
-                        st.session_state.current_prov_index = 0
-
+                        
                         # Clear text inputs
                         clear_text_input()
 
