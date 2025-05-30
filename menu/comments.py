@@ -27,6 +27,19 @@ def app():
     img = user_type_pic[user_type]
     user_type = user_type_num[user_type]
 
+
+
+    # Clear comments_input BEFORE rendering widgets if flag exists
+    if "clear_comments" in st.session_state:
+        st.session_state.comments_input = ""  # Reset the input
+        del st.session_state.clear_comments  # Remove flag
+
+
+    # Initialize session state for comments if not already set
+    if "comments_input" not in st.session_state:
+        st.session_state.comments_input = ""
+
+
     with open("styles/style.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
@@ -107,7 +120,7 @@ def app():
         else:
             st.write("No comments found.")
 
-    comments = st.text_area(label=" ", placeholder="Write your Comments Here.....")
+    st.text_area(label=" ", placeholder="Write your Comments Here.....", key="comments_input")
 
     if st.button("SEND"):
         try:
@@ -116,10 +129,14 @@ def app():
                 st.error("Please input comments first.")  # Show error message
             else:
                 # Proceed to insert comments into the database
-                response = insert_comments(main_user_id, comments)
+                response = insert_comments(main_user_id, st.session_state.comments_input)
                 
                 if response.data:  # Successful insertion
                     st.success("Comments added successfully!")
+
+                    # Set flag to trigger clear in next run
+                    st.session_state.clear_comments = True
+
                     st.rerun()
                 elif response.error:
                     st.error("An error occurred while adding your comments.")

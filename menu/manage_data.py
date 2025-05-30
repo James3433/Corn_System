@@ -37,7 +37,7 @@ def app():
 
     provinces = ['Davao Region', 'Davao de Oro', 'Davao del Norte', 'Davao del Sur', 'Davao Oriental', 'Davao City']
     provinces_num = {'Davao Region': 1, 'Davao de Oro': 2, 'Davao del Norte': 3, 'Davao del Sur': 4, 'Davao Oriental': 5, 'Davao City': 6}
-    conditions_num = {'Partly Cloudy': 1, 'Rain, Partially Cloudy': 2, 'Rain, Overcas': 2, 'Overcast': 4}
+    conditions_num = {'Partly Cloudy': 1, 'Rain, Partially Cloudy': 2, 'Rain, Overcast': 3, 'Overcast': 4}
     corn_type = {'White Corn': 1, 'Yellow Corn': 2}
 
 
@@ -51,7 +51,7 @@ def app():
                                     'windgust', "windspeed", "winddir", "sealevelpressure", "visibility", "severerisk", "conditions"])
     
 
-    price_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "farmgate_corngrains_price", "retail_corngrits_price", "wholesale_corngrits_price"])
+    price_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "farmgate_corngrains_price", "retail_corngrits_price", "retail_corngrains_price", "wholesale_corngrits_price", "wholesale_corngrains_price"])
     
     production_database = pd.DataFrame(columns=["year", "month", "province_id", "corn_type", "corn_production"])
 
@@ -183,21 +183,19 @@ def app():
 
                     if selected_dataset2 == "Fertilizer Price":
                         submit_predictions_fertilizer(st.session_state.input_data, user_id)
-                        st.session_state.input_data = fertilizer_database
 
                     elif selected_dataset2 == "Corn Price":
                         submit_predictions_price(st.session_state.input_data, user_id)
-                        st.session_state.input_data = price_database
 
                     elif selected_dataset2 == "Corn Production":
                         submit_predictions_production(st.session_state.input_data, user_id)
-                        st.session_state.input_data = production_database
+
                         
                     elif selected_dataset2 == "Weather Info":
                         st.session_state.input_data['conditions'] = st.session_state.input_data['conditions'].map(conditions_num)
                         submit_predictions_weather(st.session_state.input_data, user_id)
-                        st.session_state.input_data = weather_database
 
+                    del st.session_state.input_data # Remove flag
 
                     st.session_state.form_key = 0
                     st.session_state.current_prov_index = 0
@@ -290,35 +288,31 @@ def app():
 
                 if selected_dataset2 == "Fertilizer Price":
 
-                    col_1, col_2, col_3, col_4 = st.columns(4)
+                    col_1, col_2 = st.columns(2)
                     with col_1:
                         Ammophos = st.text_input(label="Ammophos Price", placeholder="Ammophos Price", key=f"amp_price_input")
-                    with col_2:
                         Ammosul = st.text_input(label="Ammosul Price", placeholder="Ammosul Price", key=f"ams_price_input")
-                    with col_3:
+                    with col_2:
                         Complete = st.text_input(label="Complete Price", placeholder="Complete Price", key=f"com_price_input")
-                    with col_4:
                         Urea = st.text_input(label="Urea Price", placeholder="Urea Price", key=f"urea_price_input")
 
 
                 elif selected_dataset2 == "Corn Price":
-                    st.write("White Corn")
-                    col_1, col_2, col_3 = st.columns(3)
-                    with col_1:
-                        W_Farmgate_Price = st.text_input(label="Farmgate Price", placeholder="Farmgate Price", key=f"f_price_input1")
-                    with col_2:
-                        W_Retail_Price = st.text_input(label="Retail Price", placeholder="Retail Price", key=f"r_price_input1")
-                    with col_3:
-                        W_Wholesale_Price = st.text_input(label="Wholesale Price", placeholder="Wholesale Price", key=f"w_price_input1")
 
-                    st.write("Yellow Corn")
-                    col_4, col_5, col_6 = st.columns(3)
-                    with col_4:
-                        Y_Farmgate_Price = st.text_input(label="Farmgate Price", placeholder="Farmgate Price", key=f"f_price_input2")
-                    with col_5:
-                        Y_Retail_Price = st.text_input(label="Retail Price", placeholder="Retail Price", key=f"r_price_input2")
-                    with col_6:
-                        Y_Wholesale_Price = st.text_input(label="Wholesale Price", placeholder="Wholesale Price", key=f"w_price_input2")
+                    col_1, col_2 = st.columns(2)
+                    with col_1:
+                        st.write("White Corn")
+                        W_Farmgate_Price = st.text_input(label="Farmgate Corngrains Price", placeholder="Farmgate Price", key=f"f_price_input1")
+                        W_Retail_Price = st.text_input(label="Retail Corngrits Price", placeholder="Retail Price", key=f"r_price_input1")
+                        W_Wholesale_Price_1 = st.text_input(label="Wholesale Corngrits Price", placeholder="Wholesale Price", key=f"w_price_input11")
+                        W_Wholesale_Price_2 = st.text_input(label="Wholesale Corngrains Price", placeholder="Wholesale Price", key=f"w_price_input12")
+
+                    with col_2:
+                        st.write("Yellow Corn")
+                        Y_Farmgate_Price = st.text_input(label="Farmgate Corngrains Price", placeholder="Farmgate Price", key=f"f_price_input2")
+                        Y_Retail_Price = st.text_input(label="Retail Corngrains Price", placeholder="Retail Price", key=f"r_price_input2")
+                        Y_Wholesale_Price_1 = st.text_input(label="Wholesale Corngrits Price", placeholder="Wholesale Price", key=f"w_price_input21")
+                        Y_Wholesale_Price_2 = st.text_input(label="Wholesale Corngrains Price", placeholder="Wholesale Price", key=f"w_price_input22")
 
 
                 elif selected_dataset2 == "Corn Production":
@@ -350,7 +344,7 @@ def app():
                         sealevelpressure = st.text_input(label="Sea Level Pressure", placeholder="Sea Level Pressure", key=f"sea_level_input")
                         visibility = st.text_input(label="Visibility", placeholder="Visibility", key=f"visibility_input")
                         severerisk = st.text_input(label="Severe Risk", placeholder="Severe Risk", key=f"severerisk_input")
-                        conditions = st.selectbox("Condiions:", ['Partly Cloudy', 'Rain, Partially Cloudy', 'Rain, Overcast', 'Overcast'])
+                        conditions = st.selectbox("Condiions:", ['Partly Cloudy', 'Rain, Partially Cloudy', 'Rain, Overcast', 'Overcast'], key=f"conditions_input")
 
                 
 
@@ -387,7 +381,7 @@ def app():
                                 fields = [float(field) for field in fields]
                                 
                             except ValueError:
-                                st.error("Please enter valid numeric values for all corn prices.")
+                                st.error("Please enter valid numeric values for all fertilizer prices.")
                                 return
                             
                             if not all(fields):
@@ -398,31 +392,37 @@ def app():
                                 "month": current_month,
                                 "year": current_year,
                                 "province_id": current_prov,
+                                "corn_type": "White Corn",
                                 **dict(zip(field_names, fields))
                             }
                             new_data_yellow = {
                                 "month": current_month,
                                 "year": current_year,
                                 "province_id": current_prov,
+                                "corn_type": "Yellow Corn",
                                 **dict(zip(field_names, fields))
                             }
 
 
                         elif selected_dataset2 == "Corn Price":
-                            fields1 = [W_Farmgate_Price, W_Retail_Price, W_Wholesale_Price]
-                            fields2 = [Y_Farmgate_Price, Y_Retail_Price, Y_Wholesale_Price]
-                            field_names = ["farmgate_corngrains_price", "retail_corngrits_price", "wholesale_corngrits_price"]
+                            fields1 = [W_Farmgate_Price, W_Retail_Price, 0.00, W_Wholesale_Price_1, W_Wholesale_Price_2]
+                            fields2 = [Y_Farmgate_Price, 0.00, Y_Retail_Price, Y_Wholesale_Price_1, Y_Wholesale_Price_2]
+                            field_names = ["farmgate_corngrains_price", "retail_corngrits_price", "retail_corngrains_price", "wholesale_corngrits_price", "wholesale_corngrains_price"]
                             
-                            # Attempt to convert all fields to float
                             try:
                                 fields1 = [float(field1) for field1 in fields1]
                                 fields2 = [float(field2) for field2 in fields2]
-                                
                             except ValueError:
                                 st.error("Please enter valid numeric values for all corn prices.")
                                 return
-                            
-                            if not all(fields1) or not all(fields2):
+
+                            def has_invalid_fields(fields):
+                                for f in fields:
+                                    if f is None or (isinstance(f, str) and f.strip() == ""):
+                                        return True
+                                return False
+
+                            if has_invalid_fields(fields1) or has_invalid_fields(fields2):
                                 st.error("Please fill in all fields.")
                                 return
 
@@ -480,7 +480,7 @@ def app():
                                 fields = [float(field) for field in fields]
                                 
                             except ValueError:
-                                st.error("Please enter valid numeric values for all corn prices.")
+                                st.error("Please enter valid values for all weather data.")
                                 return
                             
                             if not all(fields):
@@ -529,19 +529,21 @@ def app():
                 if st.session_state.current_prov_index != 0:
                     # Remove button logic
                     if remove_data:
+                        # Get the current province based on the index
+                        remove_current_prov = provinces[st.session_state.current_prov_index - 1]
 
-                        if not st.session_state.input_data[st.session_state.input_data['province_id'] == current_prov].empty:
+                        if not st.session_state.input_data[st.session_state.input_data['province_id'] == remove_current_prov].empty:
                             # Remove entries for the current province
-                            st.session_state.input_data = st.session_state.input_data[st.session_state.input_data['province_id'] != current_prov]
+                            st.session_state.input_data = st.session_state.input_data[st.session_state.input_data['province_id'] != remove_current_prov]
 
                             st.session_state.current_prov_index -= 1
 
                             st.rerun() # Rerun to reflect changes
 
-                            st.success(f"Data for {current_prov} removed successfully!")
+                            st.success(f"Data for {remove_current_prov} removed successfully!")
 
                         else:
-                            st.warning(f"No data found for {current_prov} to remove.")
+                            st.warning(f"No data found for {remove_current_prov} to remove.")
 
 
                 # Display updated DataFrame again after removal
@@ -619,6 +621,7 @@ def app():
             def predict_predictor(dataset, predictor_set, corn_type, folder_type, province_name):
                 # Create datetime index from year and month
                 new_dataset = dataset
+
                 new_dataset['ds'] = pd.to_datetime(new_dataset['year'].astype(str) + '-' + new_dataset['month'].astype(str), format='%Y-%m')
                 
                 # Initialize dictionary to store models
@@ -683,14 +686,6 @@ def app():
 
 
             # # ==============================================[RERF PREDICTS]=================================================================================   
-
-            def extend_predictors(x_train, x_test):
-
-                poly = PolynomialFeatures(degree=2, include_bias=True)
-                x_train = poly.fit_transform(x_train)
-                x_test = poly.transform(x_test)
-                
-                return x_train, x_test
 
             def RERF_Model(X, Y, corn_type, folder_type, province_name, target):
 
@@ -774,7 +769,7 @@ def app():
                 st.stop()  # Prevents further execution
 
             # st.dataframe(white_corn_davao_region)
-            # st.dataframe(white_corn_davao_region_dataset)
+            # st.dataframe(yellow_corn_davao_region)
 
             w_f_predictor = ['corn_production', 'ammophos_price', 'ammosul_price', 'complete_price', 'urea_price', 'feelslike', 'dew', 
                         'humidity', 'precip', 'precipcover', 'windgust', 'windspeed', 'winddir','sealevelpressure', 'visibility', 

@@ -471,7 +471,9 @@ def submit_predictions_price(predictions_df, user_id):
             'corn_type': int(row['corn_type']),  # Assuming 'corn_type' is already included
             'farmgate_corngrains_price': float(row['farmgate_corngrains_price']),  # Assuming this column exists
             'retail_corngrits_price': float(row['retail_corngrits_price']),  # Assuming this column exists
+            'retail_corngrains_price': float(row['retail_corngrains_price']),  # Assuming this column exists
             'wholesale_corngrits_price': float(row['wholesale_corngrits_price']),  # Assuming this column exists
+            'wholesale_corngrains_price': float(row['wholesale_corngrains_price']),  # Assuming this column exists
             'user_id': user_id  # Pass the user ID as needed
         })
 
@@ -480,7 +482,7 @@ def submit_predictions_price(predictions_df, user_id):
 
 
 
-def submit_predictions_production(predictions_df, user_id, corn_type):
+def submit_predictions_production(predictions_df, user_id):
     # Prepare data for insertion
     data_to_insert = []
     
@@ -519,7 +521,7 @@ def submit_predictions_weather(predictions_df, user_id):
             'sealevelpressure': float(row['sealevelpressure']),  # Assuming this column exists
             'visibility': float(row['visibility']),  # Assuming this column exists
             'severerisk': float(row['severerisk']),  # Assuming this column exists
-            'conditions': float(row['conditions']),  # Assuming this column exists
+            'conditions': int(row['conditions']),  # Assuming this column exists
             'user_id': user_id  # Pass the user ID as needed
         })
 

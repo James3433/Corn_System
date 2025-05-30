@@ -524,8 +524,8 @@ def app():
         # Reverse the dictionary
         month_mapping_2 = {v: k for k, v in month_mapping_1.items()}
 
-        last_month = white_prediction_df['month'].iloc[1]
-        last_year = white_prediction_df['year'].iloc[1]
+        last_month = white_prediction_df['month'].iloc[0]
+        last_year = white_prediction_df['year'].iloc[0]
 
         # Collect user inputs for Month selection
         month_names = list(month_mapping_1.keys())
