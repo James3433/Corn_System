@@ -76,7 +76,7 @@ def app():
 
 
     if "selected_dataset2_num" not in st.session_state:
-        st.session_state.selected_dataset2_num = 0
+        st.session_state.selected_dataset2_num = 4
 
 
     
@@ -264,7 +264,7 @@ def app():
             # st.write("Province = 'Davao Region': 1, 'Davao de Oro': 2, 'Davao del Norte': 3, 'Davao del Sur': 4, 'Davao Oriental': 5, 'Davao City': 6")
             
             st.markdown(f"""
-            <div style="background-color: #a3f841; padding: 10px; border-radius: 20px;">
+            <div style="background-color: #66CC91; padding: 10px; border-radius: 20px;">
                 <h6> Province = 'Davao Region': 1, 'Davao de Oro': 2, 'Davao del Norte': 3, 'Davao del Sur': 4, 'Davao Oriental': 5, 'Davao City': 6 </h6>
                 <h6> User Admin = {usernames} </h6>
             </div>

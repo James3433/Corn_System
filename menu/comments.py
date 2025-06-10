@@ -46,7 +46,7 @@ def app():
     st.markdown(f"""
             <style>
                 [data-testid="stVerticalBlockBorderWrapper"] {{
-                    background-color: #5bcd00;
+                    background-color: #66CC91;
                     width: 100%;
                     height: 110%; 
                     border-radius: 10px;
@@ -55,7 +55,7 @@ def app():
 
                 .comment_box{{
                     border-radius: 10px;
-                    background-color: #578809;
+                    background-color: #389961;
                     padding: 1% 5%;
                     margin-bottom: 2%;
                 }}

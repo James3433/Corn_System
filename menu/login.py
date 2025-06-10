@@ -20,8 +20,8 @@ def app():
 
                 [data-testid="stAppViewBlockContainer"] {{
                     border-radius: 10px;
-                    background-color: #8edd27;
-                    border: 2px solid green;
+                    background-color: #66CC91;
+                    border: 2px solid #389961;
                     width: 90%;
                     padding: 1% 5%;
                 }}

@@ -6,7 +6,7 @@
     background-size: 100%;
     padding: 20px;
     align-items: unset; */
-    background-color:#70e500;
+    background-color:white;
 
 }
 
@@ -18,8 +18,8 @@
     /* background-image: url(https://t4.ftcdn.net/jpg/08/05/28/19/360_F_805281949_CH7sKUKknBeGiKIQ3FttaIgKlnY7buUU.jpg);
     background-position-x: -56em;
     background-size: 501%; */
-    background-color:#70e500;
-    border-right: 3px solid green;
+    background-color:#66CC91;
+    border-right: 3px solid #389961;
 }
 
 ul.st-emotion-cache-10rjk4g.eczjsme14 li {
@@ -30,6 +30,16 @@ ul.st-emotion-cache-10rjk4g.eczjsme14 li {
 h1, h2, h3, h4, h5, p {
     color: black;
 }
+.intro{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2em;
+}
+.intro img{
+    border: 5px solid #389961;
+    border-radius: 5em;
+}
 .container {
     display: grid;
     grid-template-columns: repeat(2, 2fr);
@@ -37,7 +47,7 @@ h1, h2, h3, h4, h5, p {
     margin-bottom: 10em;
 }
 .container_1, .container_2, .container_3, .container_4, .container_5{
-    background-color: #a3f841;
+    background-color: #66CC91;
     border-radius: 20px;
     padding: 10px;
     height: 11em;
@@ -52,7 +62,7 @@ h1, h2, h3, h4, h5, p {
 .message_price div {
     width: 50%;
     padding: 10px 20px;
-    border: 2px solid green;
+    border: 2px solid #389961;
     border-radius: 20px;
 }
 .message_price div p {
@@ -110,11 +120,11 @@ h1, h2, h3, h4, h5, p {
 .info div {
     display: flex;
     flex-direction: row;
-    background-color: #8edd27;
+    background-color: #66CC91;
     width: 99%;
     padding: 20px;
     border-radius: 10px;
-    box-shadow: 4px 8px #578809;
+    box-shadow: 4px 8px #389961;
 }
 
 .info img {
@@ -122,21 +132,26 @@ h1, h2, h3, h4, h5, p {
 }
 
 .step_info_box_1, .step_info_box_2, .step_info_box_3, .step_info_box_4, .step_info_box_5{
-    background-color: #8edd27;
+    background-color: #66CC91;
     width: 99%;
     padding: 20px;
     border-radius: 10px;
-    box-shadow: 4px 8px #578809;
+    box-shadow: 4px 8px #389961;
     margin-top: 20px;
     margin-bottom: 20px;
 }
 
+[data-testid="stForm"] {
+    background-color: #66CC91;
+    border: 3px solid #389961;
+}
+
 [data-testid="baseButton-secondary"] {
-    background-color: #8edd27;
+    background-color: #66CC91;
     width: 100%;
     height: 110%; 
     border-radius: 10px;
-    border: 2px solid green;
+    border: 2px solid #389961;
     padding: 1% 5%;
 }
 
@@ -147,14 +162,14 @@ h1, h2, h3, h4, h5, p {
     width: 2.6em;
     padding: 3px 0px 0px 1px;
     line-height: 0;
-    background-color: #8edd27;
+    background-color: #66CC91;
     border-radius: 4em;
-    border: 2px solid green;
+    border: 2px solid #389961;
 }
 
 /* button design */
 button.st-emotion-cache-7ym5gk.ef3psqc12 {
-    background-color: #6db115;
+    background-color: #66CC91;
 }
 
 

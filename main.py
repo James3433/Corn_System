@@ -79,11 +79,11 @@ class MultiApp:
                     menu_icon='chat-text-fill',
                     default_index=0,
                     styles={
-                        "container": {"background-color": "#a3f841"},
+                        "container": {"background-color": "#5DEB99"},
                         "icon": {"color": "black", "font-size": "20px"},
                         "menu-title": {"color": "black", "font-size": "20px", "font-family": "Source Sans Pro, sans-serif"},
                         "nav-link": {"color": "black", "font-size": "13px", "font-family": "Source Sans Pro, sans-serif"},
-                        "nav-link-selected": {"background-color": "#eeff00", "font-family": "Source Sans Pro, sans-serif"}
+                        "nav-link-selected": {"background-color": "#389961", "font-family": "Source Sans Pro, sans-serif"}
                     }
                 )
 
@@ -91,7 +91,7 @@ class MultiApp:
                 st.markdown(f"""
                     <style>
                         [data-testid="stSidebarHeader"]::before {{
-                            background-color: greenyellow;
+                            background-color: #5DEB99;
                             width: 79%;
                             height: 10%;
                             padding: 2% 0% 2% 6%;
@@ -115,11 +115,11 @@ class MultiApp:
                     menu_icon='chat-text-fill',
                     default_index=0,
                     styles={
-                        "container": {"background-color": "#a3f841"},
+                        "container": {"background-color": "#5DEB99"},
                         "icon": {"color": "black", "font-size": "20px"},
                         "menu-title": {"color": "black", "font-size": "20px", "font-family": "Source Sans Pro, sans-serif"},
                         "nav-link": {"color": "black", "font-size": "13px", "font-family": "Source Sans Pro, sans-serif"},
-                        "nav-link-selected": {"background-color": "#eeff00", "font-family": "Source Sans Pro, sans-serif"}
+                        "nav-link-selected": {"background-color": "#389961", "font-family": "Source Sans Pro, sans-serif"}
                     }
                 )
 
@@ -127,7 +127,7 @@ class MultiApp:
                 st.markdown(f"""
                     <style>
                         [data-testid="stSidebarHeader"]::before {{
-                            background-color: greenyellow;
+                            background-color: #5DEB99;
                             width: 79%;
                             height: 10%;
                             padding: 2% 0% 2% 6%;
@@ -151,12 +151,12 @@ class MultiApp:
                     menu_icon='key-fill',
                     default_index=0,
                     styles={
-                        "container": {"background-color": "#a3f841"},
+                        "container": {"background-color": "#5DEB99"},
                         "icon": {"color": "black", "font-size": "20px"},
                         "menu-title": {"color": "black", "font-size": "20px", "font-family": "Source Sans Pro, sans-serif"},
                         "menu-icon": {"color": "black", "font-size": "40px"},
                         "nav-link": {"color": "black", "font-size": "13px", "font-family": "Source Sans Pro, sans-serif"},
-                        "nav-link-selected": {"background-color": "#eeff00", "font-family": "Source Sans Pro, sans-serif"}
+                        "nav-link-selected": {"background-color": "#389961", "font-family": "Source Sans Pro, sans-serif"}
                     }
                 )
 

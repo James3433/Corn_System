@@ -21,16 +21,16 @@ def app():
                     padding-top: 10%;
                 }}
 
-                [data-testid="stMainBlockContainer"] {{    
+                [data-testid="stAppViewBlockContainer"] {{    
                     border-radius: 10px;
-                    background-color: #8edd27;
-                    border: 2px solid green;
+                    background-color: #66CC91;
+                    border: 2px solid #389961;
                     width: 90%;
                     padding: 1% 5% 5%;
                 }}
 
                 @media (max-width: 768px) {{
-                    [data-testid="stMainBlockContainer"] {{    
+                    [data-testid="stAppViewBlockContainer"] {{    
                         padding: 1em;
                     }}
                 }}
@@ -103,8 +103,8 @@ def app():
                     title_xanchor='left',  # Anchor title to the left
                     template="plotly_dark",  # Or other base template if you prefer
                     hovermode="x unified",
-                    plot_bgcolor='#B7E505',  # Yellow-Green for plot area
-                    paper_bgcolor='#B7E505',  # Yellow-Green for surrounding paper
+                    plot_bgcolor='#66CC91',  # Yellow-Green for plot area
+                    paper_bgcolor='#66CC91',  # Yellow-Green for surrounding paper
 
                     legend=dict(
                         font=dict(
@@ -117,26 +117,28 @@ def app():
                         tickangle=-45,
                         title_font=dict(size=15, color="black"),  # Correct property
                         tickfont=dict(size=12, color="black"), # X-axis tick labels font
-                        fixedrange=True # Disable zooming
+                        fixedrange=True, # Disable zooming
+                        showline=True, linecolor='#389961', linewidth=2
                     ),
 
                     yaxis=dict(
                         title_font=dict(size=15, color="black"),  # Correct property
                         tickfont=dict(size=12, color="black"), # Y-axis tick labels font
-                        fixedrange=True # Disable zooming
+                        fixedrange=True, # Disable zooming
+                        showline=True, linecolor='#389961', linewidth=2
                     ),
 
                     title_font=dict(size=20, color="black"), # Title font (overrides general font)
 
                     # Customize hover label appearance
-                        hoverlabel=dict(
-                            bgcolor="rgba(0, 0, 0, 0.8)", # Background color (semi-transparent black)
-                            font=dict(
-                            size=14, # Font size
-                            family="Arial", # Font family
-                            color="white" # Font color
+                    hoverlabel=dict(
+                        bgcolor="rgba(0, 0, 0, 0.8)", # Background color (semi-transparent black)
+                        font=dict(
+                        size=14, # Font size
+                        family="Arial", # Font family
+                        color="white" # Font color
                         ),
-                        bordercolor="yellow" # Border color of the tooltip
+                        bordercolor='#389961' # Border color of the tooltip
                     )
                 )
 
@@ -229,11 +231,6 @@ def app():
     wholasale_df_2 = pd.merge(ww2_df, yw2_df)
 
 
-    # Adjust DataFrames based on user type
-    col_1, col_2 = st.columns(2)
-    col_3, col_4 = st.columns(2)
-
-
 # =======================================[ Farmers Plot View ]====================================================
     if user_type == 1:
         with st.expander("Farmgate Predictions Plots"):
@@ -248,6 +245,9 @@ def app():
 
 # =======================================[ Trader Plot View ]====================================================
     elif user_type == 2:
+        # Adjust DataFrames based on user type
+        col_1, col_2 = st.columns(2)
+
         with col_1:
             with st.expander("Wholesale Corngrits Monthly Plots"):
                 monthly_plot_view(wholasale_df_1, selected_region, price_type_3)
@@ -259,6 +259,10 @@ def app():
 
 # =======================================[ Admin Plot View ]====================================================
     elif user_type == 4:
+        # Adjust DataFrames based on user type
+        col_1, col_2 = st.columns(2)
+        col_3, col_4 = st.columns(2)       
+
         with col_1:
             with st.expander("Farmgate Monthly Plots"):
                 monthly_plot_view(farmgate_df, selected_region, price_type_1)

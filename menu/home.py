@@ -10,7 +10,8 @@ def app():
             data = f.read()
         return base64.b64encode(data).decode()
     
-    img_1 = get_img_as_base64("images/Philippine_Statistics_Authority.svg.png")
+    # img_1 = get_img_as_base64("images/Philippine_Statistics_Authority.svg.png")
+    img_1 = get_img_as_base64("images/corn_logo.png")
     img_2 = get_img_as_base64("images/trade.png")
     img_3 = get_img_as_base64("images/trader.png")
     img_4 = get_img_as_base64("images/farmers.png")
@@ -23,6 +24,7 @@ def app():
 
     st.markdown(f"""
         <div class="intro">
+            <img src="data:image/png;base64,{img_1}" alt="A beautiful landscape" width="150px" height="150px">
             <h3> Welcome to DavaoRegionCorn.com</h3>
             <p> Here we help you with your problems about corn</p>
         </div>

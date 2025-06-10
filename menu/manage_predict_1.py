@@ -43,8 +43,8 @@ def app():
 
                 [data-testid="stAppViewBlockContainer"] {{    
                     border-radius: 10px;
-                    background-color: #8edd27;
-                    border: 2px solid green;
+                    background-color: #66CC91;
+                    border: 2px solid #389961;
                     width: 90%;
                     padding: 1% 5% 5%;
                 }}
@@ -294,8 +294,8 @@ def app():
             title_xanchor='left',  # Anchor title to the left
             template="plotly_dark",  # Or other base template if you prefer
             hovermode="x unified",
-            plot_bgcolor='#B7E505',  # Yellow-Green for plot area
-            paper_bgcolor='#B7E505',  # Yellow-Green for surrounding paper
+            plot_bgcolor='#66CC91',  # Yellow-Green for plot area
+            paper_bgcolor='#66CC91',  # Yellow-Green for surrounding paper
 
             legend=dict(
                 font=dict(
@@ -308,13 +308,15 @@ def app():
                 tickangle=-45,
                 title_font=dict(size=15, color="black"),  # Correct property
                 tickfont=dict(size=12, color="black"), # X-axis tick labels font
-                fixedrange=True # Disable zooming
+                fixedrange=True, # Disable zooming
+                showline=True, linecolor='#389961', linewidth=2
             ),
 
             yaxis=dict(
                 title_font=dict(size=15, color="black"),  # Correct property
                 tickfont=dict(size=12, color="black"), # Y-axis tick labels font
-                fixedrange=True # Disable zooming
+                fixedrange=True, # Disable zooming
+                showline=True, linecolor='#389961', linewidth=2
             ),
 
             title_font=dict(color="black"), # Title font (overrides general font)
@@ -327,7 +329,7 @@ def app():
                     family="Arial", # Font family
                     color="white" # Font color
                 ),
-                bordercolor="yellow" # Border color of the tooltip
+                bordercolor="#389961" # Border color of the tooltip
             )
         )
 

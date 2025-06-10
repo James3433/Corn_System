@@ -32,8 +32,8 @@ def app():
 
                 [data-testid="stAppViewBlockContainer"] {{    
                     border-radius: 10px;
-                    background-color: #8edd27;
-                    border: 2px solid green;
+                    background-color: #66CC91;
+                    border: 2px solid #389961;
                     width: 90%;
                     padding: 1% 5% 5%;
                 }}
@@ -57,7 +57,8 @@ def app():
         with col_5:
             gender = st.selectbox('Gender', ['Male', 'Female'], key='gender_selector')
         with col_6:
-            type = st.selectbox('User Type', ['Farmer', 'Trader', 'Consumer', 'Admin'], key='type_selector')
+            # type = st.selectbox('User Type', ['Farmer', 'Trader', 'Consumer', 'Admin'], key='type_selector')
+            type = st.selectbox('User Type', ['Farmer', 'Trader', 'Consumer'], key='type_selector')
 
         password = st.text_input(label="Password", type="password", placeholder="Password",  key="password_input")
 
