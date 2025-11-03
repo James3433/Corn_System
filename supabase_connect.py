@@ -1,5 +1,11 @@
 import os
+import io
+import joblib
+import httpx
 import pandas as pd
+import streamlit as st
+
+from PIL import Image
 from supabase import create_client
 
 # # Supabase credentials
@@ -8,10 +14,12 @@ from supabase import create_client
 # supabase = create_client(url, key)
 
 # Supabase credentials
-url = 'https://tejmfmrngcqvwempifkf.supabase.co'
-key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlam1mbXJuZ2NxdndlbXBpZmtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY5OTMyNjQsImV4cCI6MjA0MjU2OTI2NH0.ANyif_Z9rudaK2pH7XNF7B11T-D2eno11yatvWZZpGU'
+url = "https://hedpecluzdcgxfoyzilf.supabase.co"
+key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZHBlY2x1emRjZ3hmb3l6aWxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExOTY0MzYsImV4cCI6MjA3Njc3MjQzNn0.ZozpjOCqXNR9hZwCUt0cELF95MOvtIpMVmaw76oJ4Lw"
+
 supabase = create_client(url, key)
 
+bucket_name = "predictormodels"
 
 
 
@@ -111,6 +119,14 @@ def get_user_by_user_type(user_type):
     return None
 
 
+def get_unique_years():
+    response = supabase.table('fertilizer_data').select('*').eq('corn_type', 1).eq('province_id', 1).execute()
+    years = [row['year'] for row in response.data]
+    unique_years = sorted(set(years))
+    # print(unique_years)
+    return unique_years
+
+
 
 
 def get_fertilizer_data():
@@ -160,6 +176,8 @@ def get_weather_data():
 
 def get_fertilizer_dataset():
     response = supabase.table('fertilizer_data').select('*').limit(5000).execute()
+    print(response.count)  # Total rows available in the table (if supported)
+    print(len(response.data))  # Number of rows fetched
     response = pd.DataFrame(response.data)
 
     return response
@@ -184,11 +202,11 @@ def get_weather_dataset():
 
 
 
-def get_white_davao_region_dataset():
-    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 1).eq('province_id', 1).execute()
-    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 1).eq('province_id', 1).execute()
-    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 1).eq('province_id', 1).execute()
-    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 1).eq('province_id', 1).execute()
+def get_white_davao_region_dataset(id):
+    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 1).eq('province_id', id).execute()
+    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 1).eq('province_id', id).execute()
+    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 1).eq('province_id', id).execute()
+    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 1).eq('province_id', id).execute()
 
     response_1 = pd.DataFrame(response_1.data)
     response_2 = pd.DataFrame(response_2.data)
@@ -199,17 +217,17 @@ def get_white_davao_region_dataset():
     merged_dataset = pd.merge(response_1, response_2)
     merged_dataset = pd.merge(merged_dataset, response_3)
     merged_dataset = pd.merge(merged_dataset, response_4)
-    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
+    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type', 'retail_corngrains_price'], axis=1)
 
     return merged_dataset
 
     
 
-def get_white_davao_de_oro_dataset():
-    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 1).eq('province_id', 2).execute()
-    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 1).eq('province_id', 2).execute()
-    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 1).eq('province_id', 2).execute()
-    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 1).eq('province_id', 2).execute()
+def get_yellow_davao_region_dataset(id):
+    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 2).eq('province_id', id).execute()
+    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 2).eq('province_id', id).execute()
+    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 2).eq('province_id', id).execute()
+    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 2).eq('province_id', id).execute()
 
     response_1 = pd.DataFrame(response_1.data)
     response_2 = pd.DataFrame(response_2.data)
@@ -220,87 +238,7 @@ def get_white_davao_de_oro_dataset():
     merged_dataset = pd.merge(response_1, response_2)
     merged_dataset = pd.merge(merged_dataset, response_3)
     merged_dataset = pd.merge(merged_dataset, response_4)
-    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
-    
-    return merged_dataset
-    
-
-def get_white_davao_del_norte_dataset():
-    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 1).eq('province_id', 3).execute()
-    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 1).eq('province_id', 3).execute()
-    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 1).eq('province_id', 3).execute()
-    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 1).eq('province_id', 3).execute()
-
-    response_1 = pd.DataFrame(response_1.data)
-    response_2 = pd.DataFrame(response_2.data)
-    response_3 = pd.DataFrame(response_3.data)
-    response_4 = pd.DataFrame(response_4.data)
-
-    # Merge datasets on 'user_id' (or another common key)
-    merged_dataset = pd.merge(response_1, response_2)
-    merged_dataset = pd.merge(merged_dataset, response_3)
-    merged_dataset = pd.merge(merged_dataset, response_4)
-    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
-    
-    return merged_dataset
-    
-
-def get_white_davao_del_sur_dataset():
-    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 1).eq('province_id', 4).execute()
-    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 1).eq('province_id', 4).execute()
-    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 1).eq('province_id', 4).execute()
-    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 1).eq('province_id', 4).execute()
-
-    response_1 = pd.DataFrame(response_1.data)
-    response_2 = pd.DataFrame(response_2.data)
-    response_3 = pd.DataFrame(response_3.data)
-    response_4 = pd.DataFrame(response_4.data)
-
-    # Merge datasets on 'user_id' (or another common key)
-    merged_dataset = pd.merge(response_1, response_2)
-    merged_dataset = pd.merge(merged_dataset, response_3)
-    merged_dataset = pd.merge(merged_dataset, response_4)
-    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
-    
-    return merged_dataset
-    
-
-def get_white_davao_oriental_dataset():
-    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 1).eq('province_id', 5).execute()
-    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 1).eq('province_id', 5).execute()
-    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 1).eq('province_id', 5).execute()
-    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 1).eq('province_id', 5).execute()
-
-    response_1 = pd.DataFrame(response_1.data)
-    response_2 = pd.DataFrame(response_2.data)
-    response_3 = pd.DataFrame(response_3.data)
-    response_4 = pd.DataFrame(response_4.data)
-
-    # Merge datasets on 'user_id' (or another common key)
-    merged_dataset = pd.merge(response_1, response_2)
-    merged_dataset = pd.merge(merged_dataset, response_3)
-    merged_dataset = pd.merge(merged_dataset, response_4)
-    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
-    
-    return merged_dataset
-    
-
-def get_white_davao_city_dataset():
-    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 1).eq('province_id', 6).execute()
-    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 1).eq('province_id', 6).execute()
-    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 1).eq('province_id', 6).execute()
-    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 1).eq('province_id', 6).execute()
-
-    response_1 = pd.DataFrame(response_1.data)
-    response_2 = pd.DataFrame(response_2.data)
-    response_3 = pd.DataFrame(response_3.data)
-    response_4 = pd.DataFrame(response_4.data)
-
-    # Merge datasets on 'user_id' (or another common key)
-    merged_dataset = pd.merge(response_1, response_2)
-    merged_dataset = pd.merge(merged_dataset, response_3)
-    merged_dataset = pd.merge(merged_dataset, response_4)
-    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
+    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type', 'retail_corngrits_price'], axis=1)
     
     return merged_dataset
     
@@ -308,128 +246,55 @@ def get_white_davao_city_dataset():
 
 
 
-def get_yellow_davao_region_dataset():
-    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 2).eq('province_id', 1).execute()
-    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 2).eq('province_id', 1).execute()
-    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 2).eq('province_id', 1).execute()
-    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 2).eq('province_id', 1).execute()
-
-    response_1 = pd.DataFrame(response_1.data)
-    response_2 = pd.DataFrame(response_2.data)
-    response_3 = pd.DataFrame(response_3.data)
-    response_4 = pd.DataFrame(response_4.data)
-
-    # Merge datasets on 'user_id' (or another common key)
-    merged_dataset = pd.merge(response_1, response_2)
-    merged_dataset = pd.merge(merged_dataset, response_3)
-    merged_dataset = pd.merge(merged_dataset, response_4)
-    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
+def get_production_dataset_for_edit(month, year, province_id):
+    w_response = supabase.table('corn_production_data').select('*').eq('corn_type', 1).eq('month', month).eq('year', year).eq('province_id', province_id).execute()
+    y_response = supabase.table('corn_production_data').select('*').eq('corn_type', 2).eq('month', month).eq('year', year).eq('province_id', province_id).execute()
     
-    return merged_dataset
-    
+    w_production = w_response.data[0]['corn_production']
+    y_production = y_response.data[0]['corn_production']
 
-def get_yellow_davao_de_oro_dataset():
-    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 2).eq('province_id', 2).execute()
-    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 2).eq('province_id', 2).execute()
-    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 2).eq('province_id', 2).execute()
-    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 2).eq('province_id', 2).execute()
-
-    response_1 = pd.DataFrame(response_1.data)
-    response_2 = pd.DataFrame(response_2.data)
-    response_3 = pd.DataFrame(response_3.data)
-    response_4 = pd.DataFrame(response_4.data)
-
-    # Merge datasets on 'user_id' (or another common key)
-    merged_dataset = pd.merge(response_1, response_2)
-    merged_dataset = pd.merge(merged_dataset, response_3)
-    merged_dataset = pd.merge(merged_dataset, response_4)
-    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
-    
-    return merged_dataset
-    
-
-def get_yellow_davao_del_norte_dataset():
-    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 2).eq('province_id', 3).execute()
-    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 2).eq('province_id', 3).execute()
-    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 2).eq('province_id', 3).execute()
-    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 2).eq('province_id', 3).execute()
-
-    response_1 = pd.DataFrame(response_1.data)
-    response_2 = pd.DataFrame(response_2.data)
-    response_3 = pd.DataFrame(response_3.data)
-    response_4 = pd.DataFrame(response_4.data)
-
-    # Merge datasets on 'user_id' (or another common key)
-    merged_dataset = pd.merge(response_1, response_2)
-    merged_dataset = pd.merge(merged_dataset, response_3)
-    merged_dataset = pd.merge(merged_dataset, response_4)
-    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
-    
-    return merged_dataset
-    
-
-def get_yellow_davao_del_sur_dataset():
-    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 2).eq('province_id', 4).execute()
-    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 2).eq('province_id', 4).execute()
-    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 2).eq('province_id', 4).execute()
-    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 2).eq('province_id', 4).execute()
-
-    response_1 = pd.DataFrame(response_1.data)
-    response_2 = pd.DataFrame(response_2.data)
-    response_3 = pd.DataFrame(response_3.data)
-    response_4 = pd.DataFrame(response_4.data)
-
-    # Merge datasets on 'user_id' (or another common key)
-    merged_dataset = pd.merge(response_1, response_2)
-    merged_dataset = pd.merge(merged_dataset, response_3)
-    merged_dataset = pd.merge(merged_dataset, response_4)
-    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
-    
-    return merged_dataset
-    
-
-def get_yellow_davao_oriental_dataset():
-    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 2).eq('province_id', 5).execute()
-    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 2).eq('province_id', 5).execute()
-    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 2).eq('province_id', 5).execute()
-    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 2).eq('province_id', 5).execute()
-
-    response_1 = pd.DataFrame(response_1.data)
-    response_2 = pd.DataFrame(response_2.data)
-    response_3 = pd.DataFrame(response_3.data)
-    response_4 = pd.DataFrame(response_4.data)
-
-    # Merge datasets on 'user_id' (or another common key)
-    merged_dataset = pd.merge(response_1, response_2)
-    merged_dataset = pd.merge(merged_dataset, response_3)
-    merged_dataset = pd.merge(merged_dataset, response_4)
-    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
-    
-    return merged_dataset
-    
-
-def get_yellow_davao_city_dataset():
-    response_1 = supabase.table('corn_production_data').select('*').eq('corn_type', 2).eq('province_id', 6).execute()
-    response_2 = supabase.table('fertilizer_data').select('*').eq('corn_type', 2).eq('province_id', 6).execute()
-    response_3 = supabase.table('weather_data').select('*').eq('corn_type', 2).eq('province_id', 6).execute()
-    response_4 = supabase.table('corn_price_data').select('*').eq('corn_type', 2).eq('province_id', 6).execute()
-
-    response_1 = pd.DataFrame(response_1.data)
-    response_2 = pd.DataFrame(response_2.data)
-    response_3 = pd.DataFrame(response_3.data)
-    response_4 = pd.DataFrame(response_4.data)
-
-    # Merge datasets on 'user_id' (or another common key)
-    merged_dataset = pd.merge(response_1, response_2)
-    merged_dataset = pd.merge(merged_dataset, response_3)
-    merged_dataset = pd.merge(merged_dataset, response_4)
-    merged_dataset = merged_dataset.drop(['id', 'province_id', 'user_id', 'corn_type'], axis=1)
-    
-    return merged_dataset
-    
+    return w_production, y_production
 
 
+def get_fertilizer_dataset_for_edit(month, year, province_id):
+    w_response = supabase.table('fertilizer_data').select('*').eq('corn_type', 1).eq('month', month).eq('year', year).eq('province_id', province_id).execute()
 
+    return (w_response.data[0]['ammophos_price'], 
+            w_response.data[0]['ammosul_price'], 
+            w_response.data[0]['complete_price'], 
+            w_response.data[0]['urea_price'])
+
+
+def get_weather_dataset_for_edit(month, year, province_id):
+    w_response = supabase.table('weather_data').select('*').eq('corn_type', 1).eq('month', month).eq('year', year).eq('province_id', province_id).execute()
+
+    return (
+    w_response.data[0]['feelslike'],
+    w_response.data[0]['dew'],
+    w_response.data[0]['humidity'],
+    w_response.data[0]['precip'],
+    w_response.data[0]['precipcover'],
+    w_response.data[0]['windgust'],
+    w_response.data[0]['windspeed'],
+    w_response.data[0]['winddir'],
+    w_response.data[0]['sealevelpressure'],
+    w_response.data[0]['visibility'],
+    w_response.data[0]['severerisk'],
+    w_response.data[0]['conditions'])
+            
+
+def get_price_dataset_for_edit(month, year, province_id):
+    w_response = supabase.table('corn_price_data').select('*').eq('corn_type', 1).eq('month', month).eq('year', year).eq('province_id', province_id).execute()
+    y_response = supabase.table('corn_price_data').select('*').eq('corn_type', 2).eq('month', month).eq('year', year).eq('province_id', province_id).execute()
+
+    return (w_response.data[0]['farmgate_corngrains_price'], 
+            w_response.data[0]['retail_corngrits_price'], 
+            w_response.data[0]['wholesale_corngrits_price'], 
+            w_response.data[0]['wholesale_corngrains_price'],
+            y_response.data[0]['farmgate_corngrains_price'], 
+            y_response.data[0]['retail_corngrains_price'], 
+            y_response.data[0]['wholesale_corngrits_price'], 
+            y_response.data[0]['wholesale_corngrains_price'])
 
 
 
@@ -528,3 +393,170 @@ def submit_predictions_weather(predictions_df, user_id):
     
     response = supabase.table('weather_data').insert(data_to_insert).execute()
 
+
+
+
+
+
+def update_predictions_fertilizer(predictions_df, user_id):
+    for index, row in predictions_df.iterrows():
+        response = supabase.table('fertilizer_data')\
+            .update({
+                'ammophos_price': float(row['ammophos_price']),
+                'ammosul_price': float(row['ammosul_price']),
+                'complete_price': float(row['complete_price']),
+                'urea_price': float(row['urea_price']),
+                'user_id': user_id
+            })\
+            .eq('year', int(row['year']))\
+            .eq('month', int(row['month']))\
+            .eq('province_id', int(row['province_id']))\
+            .eq('corn_type', int(row['corn_type']))\
+            .execute()
+
+
+def update_predictions_price(predictions_df, user_id):
+    for index, row in predictions_df.iterrows():
+        response = supabase.table('corn_price_data')\
+            .update({
+                'farmgate_corngrains_price': float(row['farmgate_corngrains_price']),
+                'retail_corngrits_price': float(row['retail_corngrits_price']),  
+                'retail_corngrains_price': float(row['retail_corngrains_price']),  
+                'wholesale_corngrits_price': float(row['wholesale_corngrits_price']),  
+                'wholesale_corngrains_price': float(row['wholesale_corngrains_price']),  
+                'user_id': user_id
+            })\
+            .eq('year', int(row['year']))\
+            .eq('month', int(row['month']))\
+            .eq('province_id', int(row['province_id']))\
+            .eq('corn_type', int(row['corn_type']))\
+            .execute()
+
+
+def update_predictions_production(predictions_df, user_id):
+    for index, row in predictions_df.iterrows():
+        response = supabase.table('corn_production_data')\
+            .update({
+                'corn_production': float(row['corn_production']),  # Assuming this column exists
+                'user_id': user_id  # Pass the user ID as needed
+            })\
+            .eq('year', int(row['year']))\
+            .eq('month', int(row['month']))\
+            .eq('province_id', int(row['province_id']))\
+            .eq('corn_type', int(row['corn_type']))\
+            .execute()
+        
+
+def update_predictions_weather(predictions_df, user_id):
+    for index, row in predictions_df.iterrows():
+        response = supabase.table('weather_data')\
+            .update({
+                'feelslike': float(row['feelslike']), 
+                'dew': float(row['dew']),  
+                'humidity': float(row['humidity']), 
+                'precip': float(row['precip']), 
+                'precipcover': float(row['precipcover']), 
+                'windgust': float(row['windgust']),  
+                'windspeed': float(row['windspeed']),  
+                'winddir': float(row['winddir']),  
+                'sealevelpressure': float(row['sealevelpressure']),  
+                'visibility': float(row['visibility']),  
+                'severerisk': float(row['severerisk']),  
+                'conditions': int(row['conditions']),  
+                'user_id': user_id  
+            })\
+            .eq('year', int(row['year']))\
+            .eq('month', int(row['month']))\
+            .eq('province_id', int(row['province_id']))\
+            .eq('corn_type', int(row['corn_type']))\
+            .execute()
+
+
+
+
+
+# Add and Update Model
+def upload_model_to_supabase(model, storage_path):
+    # Serialize model to bytes in memory
+    bytes_buffer = io.BytesIO()
+    joblib.dump(model, bytes_buffer)
+    bytes_buffer.seek(0)  # Reset buffer position
+
+    supabase.storage.from_("predictormodels").upload(storage_path, bytes_buffer.read(), file_options={"x-upsert": "true"})
+
+
+    print(f"Model uploaded successfully:{storage_path}")
+
+
+
+# Add and Update Forcested Predictors
+def upload_csv_to_supabase(df, storage_path):
+    # Convert DataFrame to CSV in-memory
+    csv_buffer = io.StringIO()
+    df.to_csv(csv_buffer, index=False)
+    csv_bytes = csv_buffer.getvalue().encode()  # Encode to bytes
+    
+    supabase.storage.from_("predictormodels").upload(storage_path, csv_bytes, file_options={"x-upsert": "true"})
+
+
+    print(f"Model uploaded successfully:{storage_path}")
+
+
+
+# Add and Update Colorbar Png
+def upload_png_to_supabase(colorbar_bytes, storage_path):
+    supabase.storage.from_("predictormodels").upload(storage_path ,colorbar_bytes,file_options={"x-upsert": "true"})
+
+
+    print(f"Png uploaded successfully:{storage_path}")
+
+
+
+
+
+
+
+
+# Load Model
+def load_joblib_from_supabase(storage_path):
+    # Download file bytes
+    try:
+        response = supabase.storage.from_("predictormodels").download(storage_path)
+    
+    except Exception as e:
+        print("Upload failed with exception:", e)
+        return  # or handle error appropriately
+    
+    # Load model from bytes buffer
+    bytes_buffer = io.BytesIO(response)
+    model = joblib.load(bytes_buffer)
+    
+    return model
+
+
+def load_csv_from_supabase(storage_path):
+    # Download file bytes
+    try:
+        response = supabase.storage.from_("predictormodels").download(storage_path)
+    
+    except Exception as e:
+        print("Upload failed with exception:", e)
+        return  # or handle error appropriately  
+  
+    # Load CSV into DataFrame
+    csv_buffer = io.StringIO(response.decode('utf-8'))
+    df = pd.read_csv(csv_buffer)
+    
+    return df
+
+
+
+def load_png_from_supabase(storage_path):
+    # Download file bytes
+    try:
+        response = supabase.storage.from_("predictormodels").download(storage_path)
+        return response  # raw bytes of the image
+
+    except Exception as e:
+        print("Upload failed with exception:", e)
+        return  # or handle error appropriately 
