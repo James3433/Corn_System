@@ -53,7 +53,6 @@ if modal.is_open():
         with col2:
             if st.button('No'):
                 modal.close()  # Close modal
-                st.rerun()
 
 
 # Read CSS file once

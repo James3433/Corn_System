@@ -1,4 +1,5 @@
 import os
+import io
 import base64
 import pandas as pd
 import streamlit as st
@@ -7,7 +8,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import folium
 import geopandas as gpd
-import joblib
+import httpx
+
 
 from branca.colormap import linear
 from sklearn.preprocessing import PolynomialFeatures
@@ -15,13 +17,13 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
 
+from supabase_connect import load_joblib_from_supabase, load_csv_from_supabase, load_png_from_supabase, upload_png_to_supabase
+
 def app():
 
     @st.cache_data
-    def get_img_as_base64(file):
-        with open (file, "rb") as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
+    def get_img_as_base64(image_bytes):
+        return base64.b64encode(image_bytes).decode()
     
 
     user_type = st.session_state.get('user_type', '0')
@@ -104,24 +106,31 @@ def app():
 
 
         # Define the colorbar image filename
-        colorbar_filename = f'{title} {price_type} Colorbar.png'
-
-        # Check if the colorbar image exists and delete it
-        if os.path.exists(colorbar_filename):
-            os.remove(colorbar_filename)
-
+        colorbar_filename = f'{title} {price_type}'
 
         # Create a vertical colormap image
         fig, ax = plt.subplots(figsize=(0.5, 8))
         fig.subplots_adjust(left=0.5)
         cb = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), 
                         cax=ax, orientation='vertical')
-        cb.set_label(f'{title} in Davao Region')
-        plt.savefig(colorbar_filename, bbox_inches='tight', dpi=100)
+        cb.set_label(f'{colorbar_filename} in Davao Region')
+
+        # Save figure to bytes buffer
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', dpi=100)
+        plt.close(fig)
+        buf.seek(0)
+
+        colorbar_bytes = buf.read()  # This is the PNG image in bytes
+
+
+        upload_png_to_supabase(colorbar_bytes, f"colorbar_png/{colorbar_filename}_colorbar.png") 
+
+        colorbar_image = load_png_from_supabase(f"colorbar_png/{colorbar_filename}_colorbar.png")
 
 
         # Display the map and colorbar in Streamlit
-        img_1 = get_img_as_base64(colorbar_filename)
+        colorbar_image_base64 = get_img_as_base64(colorbar_image)
 
         with open('./map.html', 'r', encoding='utf-8') as f:
             html_data = f.read()
@@ -129,7 +138,7 @@ def app():
 
         st.markdown(f"""
                     
-            <img src="data:image/png;base64,{img_1}" alt="A beautiful landscape" width="70px" height="450px">
+            <img src="data:image/png;base64,{colorbar_image_base64}" alt="A beautiful landscape" width="70px" height="450px">
             
     """, unsafe_allow_html=True)
 
@@ -140,15 +149,21 @@ def app():
         RERF_pred = []
 
         try:
-            predictor = pd.read_csv(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/predictor_dataset.csv')
+            predictor = load_csv_from_supabase(f"{corn_type}/{province_name}/{folder_type}/predictor_dataset_for_{target}.csv")
 
             # Load the models
             try:
-                lasso_optimal = joblib.load(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/Lasso_models_for_{target}.joblib')
-                rf_optimal = joblib.load(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/RF_models_for_{target}.joblib')
+                # Usage example
+                lasso_optimal = load_joblib_from_supabase(f"{corn_type}/{province_name}/{folder_type}/RERF_Model/Lasso_models_for_{target}.joblib")
+                rf_optimal = load_joblib_from_supabase(f"{corn_type}/{province_name}/{folder_type}/RERF_Model/RF_models_for_{target}.joblib")
+  
             except FileNotFoundError as e:
                 print(f"Error loading models: {e}")
                 return pd.DataFrame()  # Return an empty DataFrame
+
+            # print(f"{corn_type}/{province_name}/{folder_type}/predictor_dataset_for_{target}.csv")
+            # print(f"{corn_type}/{province_name}/{folder_type}/RERF_Model/Lasso_models_for_{target}.joblib")
+            # print(f"{corn_type}/{province_name}/{folder_type}/RERF_Model/RF_models_for_{target}.joblib")
 
             for index, row in predictor.iterrows():
                 input_pred = row.values.reshape(1, -1)  # Reshape for single prediction
@@ -170,12 +185,18 @@ def app():
 
             return RERF_pred_df  # Return the DataFrame
 
-        except FileNotFoundError as e:
-            print(f"Error loading predictor data: {e}")
-            return pd.DataFrame()  # Return an empty DataFrame
+        except (httpx.RequestError, httpx.WriteTimeout) as e:  # Catch connection & request-related errors
+            st.error("Connection error: Unable to connect to the server. Please try again later.")
+            if st.button("Reload"):
+                st.rerun()
+            st.stop()  # Prevents further execution
+
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
-            return pd.DataFrame()
+            st.error("Connection error: Unable to connect to the server. Please try again later.")
+            if st.button("Reload"):
+                st.rerun()
+            st.stop()  # Prevents further execution
 
 
 
@@ -186,22 +207,21 @@ def app():
         if user_type == 1: 
             # predict farmgate price for white_davao_region
             price_type = "Farmgate Price"
-            folder_type = "For Farmgate"
+            folder_type = "farmgate"
             target = "farmgate_corngrains_price"
             prediction = RERF_Model(corn_type, folder_type, province_name, target) 
 
         elif user_type == 3:
             # predict retail price for white_davao_region
             price_type = "Retail Price"
-            if corn_type == "White Corn":
+            folder_type = "retail"
+            if corn_type == "white_corn":
                 # Target 1: Corn Grits
-                folder_type = "For Retail"
                 target = "retail_corngrits_price"
                 prediction = RERF_Model(corn_type, folder_type, province_name, target)
 
-            if corn_type == "Yellow Corn":
+            if corn_type == "yellow_corn":
                 # Target 2: Corn Grains
-                folder_type = "For Retail"
                 target = "retail_corngrains_price"
                 prediction = RERF_Model(corn_type, folder_type, province_name, target) 
 
@@ -209,7 +229,7 @@ def app():
             # predict wholesale price for white_davao_region
             # Target 1: Corn Grits
             price_type = "Wholesale Price"
-            folder_type = "For Wholesale"
+            folder_type = "wholesale"
             target_1 = "wholesale_corngrits_price"
             prediction_1 = RERF_Model(corn_type, folder_type, province_name, target_1)
             prediction_1 = prediction_1.rename(columns={'price': 'wholesale_corngrits_price'}) #Fix naming
@@ -224,10 +244,9 @@ def app():
 
             target = target_1
 
-
-
         return prediction, price_type, target
 
+            
     
     def manage_plot(dataset, selected_dataset, price_type):
         # Mapping full month names to three-letter abbreviations
@@ -407,8 +426,16 @@ def app():
         if selected_year == "2 Year":
             year = 24  # Overwrite default only if button is pressed
 
-        w_predictions_df, price_type, target_1 = prediction_dataset(province_configs, selected_dataset, "White Corn")
-        y_predictions_df, price_type, target_2 = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
+        try:
+            w_predictions_df, price_type, target_1 = prediction_dataset(province_configs, selected_dataset, "white_corn")
+            y_predictions_df, price_type, target_2 = prediction_dataset(province_configs, selected_dataset, "yellow_corn")
+
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            st.error("Error: Unable to connect to the server. Please try again later.")
+            if st.button("Reload"):
+                st.rerun()
+            st.stop()  # Prevents further execution         
 
 
         # st.dataframe(w_predictions_df)
@@ -489,63 +516,79 @@ def app():
         # Mapping from month abbreviations to full month names
         province_list = ['Davao Region', 'Davao de Oro', 'Davao del Norte', 'Davao del Sur', 'Davao Oriental', 'Davao City']
 
+        try:
+            white_prediction_df, price_type, target = prediction_dataset(province_configs, selected_dataset, "white_corn")
+            yellow_prediction_df, price_type, target = prediction_dataset(province_configs, selected_dataset, "yellow_corn")
 
-        white_prediction_df, price_type, target = prediction_dataset(province_configs, selected_dataset, "White Corn")
-        yellow_prediction_df, price_type, target = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
-        
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            st.error("Error: Unable to connect to the server. Please try again later.")
+            if st.button("Reload"):
+                st.rerun()
+            st.stop()  # Prevents further execution         
+
 
         # st.dataframe(white_prediction_df)
         # st.dataframe(yellow_prediction_df)
 
-
-        # Reverse the dictionary
-        month_mapping_2 = {v: k for k, v in month_mapping_1.items()}
-
         last_month = white_prediction_df['month'].iloc[0]
         last_year = white_prediction_df['year'].iloc[0]
+
+        # Reverse the dictionary
+        month_mapping_num = {v: k for k, v in month_mapping_1.items()}            
+
+        # Initialize session state defaults if not set
+        if "selected_year_1" not in st.session_state:
+            st.session_state.selected_year_1 = last_year
+
+        if "selected_month_1" not in st.session_state:
+            st.session_state.selected_month_1 = month_mapping_num[last_month]
 
         # Collect user inputs for Month selection
         month_names = list(month_mapping_1.keys())
 
-        # Ensure last_month is converted correctly for indexing
-        if last_month in month_mapping_2:
-            default_index = month_names.index(month_mapping_2[last_month])
-        else:
-            default_index = 0  # Fallback to first month if last_month is invalid
-
-
+        def update_year():
+            selected_month_num = month_mapping_1[st.session_state.selected_month_1]
+            if selected_month_num <= last_month and st.session_state.selected_year_1 == last_year:
+                st.session_state.selected_year_1 = last_year + 1
+                st.rerun()
+        def update_month():
+            selected_month_num = month_mapping_1[st.session_state.selected_month_1]
+            if selected_month_num <= last_month and st.session_state.selected_year_1 == last_year:
+                st.session_state.selected_month_1 = month_mapping_num[last_month]
+                st.rerun()
 
         col_1, col_2 = st.columns(2)
 
         with col_1:
-            # Collect user inputs
-            Month = st.selectbox("Month", month_names, index=default_index)
+            Month = st.selectbox(
+                "Month",
+                month_names,
+                index=month_names.index(st.session_state.selected_month_1),
+            )
 
-
-
-        # Determine the default year based on the selected month
-        selected_month_num = month_mapping_1[Month]
-
-
-        # Get unique values from the 'year' column and convert to a list
-        year_option_list = [int(year) for year in white_prediction_df['year'].unique().tolist()]
-
-
-        # Check if Month input is valid and adjust Year accordingly
-        if int(selected_month_num) < int(last_month):
-            Year = last_year + 1  # Increment year by 1 if selected month is less than last month
-        else:
-            Year = last_year       # Default to the last year if not incrementing
-
-        # Ensure Year is in the list of options for the selectbox
-        if Year not in year_option_list:
-            year_option_list.append(Year)  # Add Year to options if it's not already present
-
+        selected_month_num = month_mapping_1[st.session_state.selected_month_1]
 
         with col_2:
-            # Select Year with default index based on Year variable
-            Year = st.selectbox("Select Year", sorted(year_option_list), index=year_option_list.index(Year))
+            # Get unique years dynamically
+            year_option_list = [int(year) for year in white_prediction_df['year'].unique().tolist()]
 
+            Year = st.selectbox(
+                "Select Year",
+                year_option_list,
+                index=year_option_list.index(st.session_state.selected_year_1),
+            )
+
+        # Update session state manually if changed
+        if Month != st.session_state.selected_month_1:
+            st.session_state.selected_month_1 = Month
+            update_year()
+            st.rerun()
+
+        if Year != st.session_state.selected_year_1:
+            st.session_state.selected_year_1 = Year
+            update_month()
+            st.rerun()
 
         # Filter predictions_df based on user inputs
         white_filtered_data = white_prediction_df[(white_prediction_df['month'] == selected_month_num) & (white_prediction_df['year'] == Year)]
@@ -559,9 +602,9 @@ def app():
         # st.dataframe(yellow_filtered_data)
 
         if user_type == 1: 
-            price_type = "Farmgate Price"
+            price_type = "farmgate_price"
         if user_type == 3: 
-            price_type = "Retail Price"
+            price_type = "retail_price"
         if user_type == 2: 
             white_filtered_data_1 = white_filtered_data.drop(["wholesale_corngrains_price"], axis=1)
             white_filtered_data_2 = white_filtered_data.drop(["wholesale_corngrits_price"], axis=1)
@@ -569,34 +612,39 @@ def app():
             yellow_filtered_data_1 = yellow_filtered_data.drop(["wholesale_corngrains_price"], axis=1)
             yellow_filtered_data_2 = yellow_filtered_data.drop(["wholesale_corngrits_price"], axis=1)
 
-            price_type_1 = "Wholesale Corn Grits Price"
-            price_type_2 = "Wholesale Corn Grains Price"
+            price_type_1 = "wholesale_corn_grits_rice"
+            price_type_2 = "wholesale_corn_grains_rice"
 
 
+        try:
+            col1, col2 = st.columns(2)
+            with col1:
+                if user_type == 2: 
+                    with st.expander("White Predictions Heat Map"):
+                        st.subheader(f"{price_type_1}")
+                        heatmap(white_filtered_data_1, price_type_1, "white_corn")
 
-        col1, col2 = st.columns(2)
-        with col1:
-            if user_type == 2: 
-                with st.expander("White Predictions Heat Map"):
-                    st.subheader(f"{price_type_1}")
-                    heatmap(white_filtered_data_1, price_type_1, "White Corn")
+                        st.subheader(f"{price_type_2}")
+                        heatmap(white_filtered_data_2, price_type_2, "white_corn")
+                else:
+                    st.header(f"White Corn {price_type}")
+                    heatmap(white_filtered_data, price_type, "white_corn")
 
-                    st.subheader(f"{price_type_2}")
-                    heatmap(white_filtered_data_2, price_type_2, "White Corn")
-            else:
-                st.header(f"White Corn {price_type}")
-                heatmap(white_filtered_data, price_type, "White Corn")
+            with col2:
+                if user_type == 2: 
+                    with st.expander("Yellow Predictions Heat Map"):
+                        st.subheader(f"{price_type_1}")
+                        heatmap(yellow_filtered_data_1, price_type_1, "yellow_corn")
 
-        with col2:
-            if user_type == 2: 
-                with st.expander("Yellow Predictions Heat Map"):
-                    st.subheader(f"{price_type_1}")
-                    heatmap(yellow_filtered_data_1, price_type_1, "Yellow Corn")
+                        st.subheader(f"{price_type_2}")
+                        heatmap(yellow_filtered_data_2, price_type_2, "yellow_corn")
+                else:
+                    st.header(f"Yellow Corn {price_type}")
+                    heatmap(yellow_filtered_data, price_type, "yellow_corn")
 
-                    st.subheader(f"{price_type_2}")
-                    heatmap(yellow_filtered_data_2, price_type_2, "Yellow Corn")
-            else:
-                st.header(f"Yellow Corn {price_type}")
-                heatmap(yellow_filtered_data, price_type, "Yellow Corn")
-
-
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            st.error("Error: Unable to connect to the server. Please try again later.")
+            if st.button("Reload"):
+                st.rerun()
+            st.stop()  # Prevents further execution

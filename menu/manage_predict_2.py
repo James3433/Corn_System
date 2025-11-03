@@ -1,4 +1,5 @@
 import os
+import io
 import base64
 import pandas as pd
 import streamlit as st
@@ -7,7 +8,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import folium
 import geopandas as gpd
-import joblib
+import httpx
 
 
 from branca.colormap import linear
@@ -16,12 +17,13 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
 
+from supabase_connect import load_joblib_from_supabase, load_csv_from_supabase, load_png_from_supabase, upload_png_to_supabase
+
 def app():
+
     @st.cache_data
-    def get_img_as_base64(file):
-        with open (file, "rb") as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
+    def get_img_as_base64(image_bytes):
+        return base64.b64encode(image_bytes).decode()
 
     # Load custom CSS
     with open("styles/style.css") as f:
@@ -99,25 +101,32 @@ def app():
         # Save the map as an HTML file
         map.save('./map.html')
 
-                # Define the colorbar image filename
-        colorbar_filename = f'{title} {price_type} Colorbar.png'
-
-        # Check if the colorbar image exists and delete it
-        if os.path.exists(colorbar_filename):
-            os.remove(colorbar_filename)
-
+        # Define the colorbar image filename
+        colorbar_filename = f'{title}_{price_type}'
 
         # Create a vertical colormap image
         fig, ax = plt.subplots(figsize=(0.5, 8))
         fig.subplots_adjust(left=0.5)
         cb = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), 
                         cax=ax, orientation='vertical')
-        cb.set_label(f'{title} in Davao Region')
-        plt.savefig(colorbar_filename, bbox_inches='tight', dpi=100)
+        cb.set_label(f'{colorbar_filename}_in_davao_region')
+
+        # Save figure to bytes buffer
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', dpi=100)
+        plt.close(fig)
+        buf.seek(0)
+
+        colorbar_bytes = buf.read()  # This is the PNG image in bytes
+
+
+        upload_png_to_supabase(colorbar_bytes, f"colorbar_png/{colorbar_filename}_colorbar.png") 
+
+        colorbar_image = load_png_from_supabase(f"colorbar_png/{colorbar_filename}_colorbar.png")
 
 
         # Display the map and colorbar in Streamlit
-        img_1 = get_img_as_base64(colorbar_filename)
+        colorbar_image_base64 = get_img_as_base64(colorbar_image)
 
         with open('./map.html', 'r', encoding='utf-8') as f:
             html_data = f.read()
@@ -125,7 +134,7 @@ def app():
 
         st.markdown(f"""
                     
-            <img src="data:image/png;base64,{img_1}" alt="A beautiful landscape" width="70px" height="450px">
+            <img src="data:image/png;base64,{colorbar_image_base64}" alt="A beautiful landscape" width="70px" height="450px">
             
     """, unsafe_allow_html=True)
 
@@ -138,81 +147,84 @@ def app():
         RERF_pred = []
 
         try:
-            predictor = pd.read_csv(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/predictor_dataset.csv')
+            # Load forecasted predictor dataset from Supabase Storage
+            predictor = load_csv_from_supabase(f"{corn_type}/{province_name}/{folder_type}/predictor_dataset_for_{target}.csv")
 
-            # Load the models
-            try:
-                lasso_optimal = joblib.load(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/Lasso_models_for_{target}.joblib')
-                rf_optimal = joblib.load(f'Predictor_Models/{corn_type}/{province_name}/{folder_type}/RERF_Model/RF_models_for_{target}.joblib')
-            except FileNotFoundError as e:
-                print(f"Error loading models: {e}")
-                return pd.DataFrame()  # Return an empty DataFrame
+            # Load pre-trained models (Lasso and Random Forest) from Supabase Storage
+            lasso_optimal = load_joblib_from_supabase(f"{corn_type}/{province_name}/{folder_type}/RERF_Model/Lasso_models_for_{target}.joblib")
+            rf_optimal = load_joblib_from_supabase(f"{corn_type}/{province_name}/{folder_type}/RERF_Model/RF_models_for_{target}.joblib")
 
+            RERF_pred = []  # Initialize list to store final predictions
+
+            # Iterate over each row in the predictor DataFrame to generate predictions
             for index, row in predictor.iterrows():
-                input_pred = row.values.reshape(1, -1)  # Reshape for single prediction
+                input_pred = row.values.reshape(1, -1)  # Reshape row values for model input
 
-                # Predictions using Lasso
+                # Predict using Lasso model
                 y_pred_lasso_test = lasso_optimal.predict(input_pred)
 
-                # Final predictions from Random Forest on test set residuals
+                # Predict residuals using Random Forest model
                 y_pred_rf_test = rf_optimal.predict(input_pred)
 
-                # Combine predictions from Lasso and Random Forest for final prediction
+                # Combine Lasso prediction and Random Forest residual prediction for final output
                 final_prediction = y_pred_lasso_test + y_pred_rf_test
 
-                RERF_pred.append(final_prediction[0])  # Append the single prediction
+                RERF_pred.append(final_prediction[0])  # Append the scalar prediction to the list
 
+            # Round all predictions to 2 decimal places
             final_predict = pd.Series([round(pred, 2) for pred in RERF_pred])
-            RERF_pred_df = predictor[['year','month']].copy() # Prevent SettingWithCopyWarning
-            RERF_pred_df[price_type] = final_predict
+            RERF_pred_df = predictor[['year', 'month']].copy()  # Copy year and month from the forecasted predictor
+            RERF_pred_df[price_type] = final_predict            # Add the predicted prices to the DataFrame
 
-            # st.dataframe(RERF_pred_df)
+            # Return the DataFrame containing year, month, and predicted prices
+            return RERF_pred_df
 
-            return RERF_pred_df  # Return the DataFrame
 
         except FileNotFoundError as e:
-            print(f"Error loading predictor data: {e}")
+            print(f"Error loading models: {e}")
             return pd.DataFrame()  # Return an empty DataFrame
+
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
-            return pd.DataFrame()
-
+            return pd.DataFrame()  # Return an empty DataFrame
 
 
 
     def predict_dataset(corn_type, province_name):
-
+   
         # predict farmgate price for white_davao_region
         f_price_type = "farmgate_corngrains_price"
-        f_folder_type = "For Farmgate"
+        f_folder_type = "farmgate"
         f_target = "farmgate_corngrains_price"
         f_prediction = RERF_Model(corn_type, f_folder_type, province_name, f_target, f_price_type) 
 
-        if corn_type == "White Corn":
+        if corn_type == "white_corn":
             # predict retail price for white_davao_region
             r_price_type = "retail_corngrits_price"
-            r_folder_type = "For Retail"
+            r_folder_type = "retail"
             r_target = "retail_corngrits_price"
             r_prediction = RERF_Model(corn_type, r_folder_type, province_name, r_target, r_price_type)
 
-        if corn_type == "Yellow Corn":
+        elif corn_type == "yellow_corn":
             # predict retail price for white_davao_region
             r_price_type = "retail_corngrains_price"
-            r_folder_type = "For Retail"
+            r_folder_type = "retail"
             r_target = "retail_corngrains_price"
             r_prediction = RERF_Model(corn_type, r_folder_type, province_name, r_target, r_price_type) 
 
         # predict wholesale price for white_davao_region
         w_price_type_1 = "wholesale_corngrits_price"
-        w_folder_type = "For Wholesale"
+        w_folder_type = "wholesale"
         w_target_1 = "wholesale_corngrits_price"
         w_prediction_1 = RERF_Model(corn_type, w_folder_type, province_name, w_target_1, w_price_type_1) 
 
-         # predict wholesale price for white_davao_region
+        # predict wholesale price for white_davao_region
         w_price_type_2 = "wholesale_corngrains_price"
         w_target_2 = "wholesale_corngrains_price"
         w_prediction_2 = RERF_Model(corn_type, w_folder_type, province_name, w_target_2, w_price_type_2) 
 
+
+        # st.write(corn_type)
         # st.dataframe(f_prediction)
         # st.dataframe(r_prediction)
         # st.dataframe(w_prediction_1)
@@ -224,8 +236,7 @@ def app():
         w_prediction_2 = w_prediction_2.drop(['year','month'], axis=1)
         predict_dataset = pd.concat([f_prediction, r_prediction, w_prediction_1, w_prediction_2], axis=1)
 
-
-        return predict_dataset
+        return predict_dataset   
 
 
     
@@ -406,9 +417,17 @@ def app():
         if selected_year == "2 Year":
             year = 24  # Overwrite default only if button is pressed
 
+        try:
+            w_predictions_df = prediction_dataset(province_configs, selected_dataset, "white_corn")
+            y_predictions_df = prediction_dataset(province_configs, selected_dataset, "yellow_corn")
 
-        w_predictions_df = prediction_dataset(province_configs, selected_dataset, "White Corn")
-        y_predictions_df = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            st.error("Error: Unable to connect to the server. Please try again later.")
+            if st.button("Reload"):
+                st.rerun()
+            st.stop()  # Prevents further execution 
+
 
         # st.dataframe(w_predictions_df)
         # st.dataframe(y_predictions_df)
@@ -515,60 +534,82 @@ def app():
         # Mapping from month abbreviations to full month names
         province_list = ['Davao Region', 'Davao de Oro', 'Davao del Norte', 'Davao del Sur', 'Davao Oriental', 'Davao City']
 
-
-        white_prediction_df = prediction_dataset(province_configs, selected_dataset, "White Corn")
-        yellow_prediction_df = prediction_dataset(province_configs, selected_dataset, "Yellow Corn")
+        try:
+            white_prediction_df = prediction_dataset(province_configs, selected_dataset, "white_corn")
+            yellow_prediction_df = prediction_dataset(province_configs, selected_dataset, "yellow_corn")
         
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            st.error("Error: Unable to connect to the server. Please try again later.")
+            if st.button("Reload"):
+                st.rerun()
+            st.stop()  # Prevents further execution 
+        
+
         # st.dataframe(white_prediction_df)
         # st.dataframe(yellow_prediction_df)
-
-
-        # Reverse the dictionary
-        month_mapping_2 = {v: k for k, v in month_mapping_1.items()}
 
         last_month = white_prediction_df['month'].iloc[0]
         last_year = white_prediction_df['year'].iloc[0]
 
+        # Reverse the dictionary
+        month_mapping_num = {v: k for k, v in month_mapping_1.items()}            
+
+        # Initialize session state defaults if not set
+        if "selected_year_1" not in st.session_state:
+            st.session_state.selected_year_1 = last_year
+
+        if "selected_month_1" not in st.session_state:
+            st.session_state.selected_month_1 = month_mapping_num[last_month]
+
         # Collect user inputs for Month selection
         month_names = list(month_mapping_1.keys())
 
-        # Ensure last_month is converted correctly for indexing
-        if last_month in month_mapping_2:
-            default_index = month_names.index(month_mapping_2[last_month])
-        else:
-            default_index = 0  # Fallback to first month if last_month is invalid
-
-
+        def update_year():
+            selected_month_num = month_mapping_1[st.session_state.selected_month_1]
+            if selected_month_num <= last_month and st.session_state.selected_year_1 == last_year:
+                st.session_state.selected_year_1 = last_year + 1
+                st.rerun()
+        def update_month():
+            selected_month_num = month_mapping_1[st.session_state.selected_month_1]
+            if selected_month_num <= last_month and st.session_state.selected_year_1 == last_year:
+                st.session_state.selected_month_1 = month_mapping_num[last_month]
+                st.rerun()
 
         col_1, col_2 = st.columns(2)
 
         with col_1:
-            # Collect user inputs
-            Month = st.selectbox("Month", month_names, index=default_index)
+            Month = st.selectbox(
+                "Month",
+                month_names,
+                index=month_names.index(st.session_state.selected_month_1),
+            )
 
-        # Determine the default year based on the selected month
-        selected_month_num = month_mapping_1[Month]
-
-
-        # Get unique values from the 'year' column and convert to a list
-        year_option_list = [int(year) for year in white_prediction_df['year'].unique().tolist()]
-
-
-        # Check if Month input is valid and adjust Year accordingly
-        if int(selected_month_num) < int(last_month):
-            Year = last_year + 1  # Increment year by 1 if selected month is less than last month
-        else:
-            Year = last_year       # Default to the last year if not incrementing
-
-        # Ensure Year is in the list of options for the selectbox
-        if Year not in year_option_list:
-            year_option_list.append(Year)  # Add Year to options if it's not already present
-
-
+        selected_month_num = month_mapping_1[st.session_state.selected_month_1]
 
         with col_2:
-            # Select Year with default index based on Year variable
-            Year = st.selectbox("Select Year", sorted(year_option_list), index=year_option_list.index(Year))
+            # Get unique years dynamically
+            year_option_list = [int(year) for year in white_prediction_df['year'].unique().tolist()]
+
+            Year = st.selectbox(
+                "Select Year",
+                year_option_list,
+                index=year_option_list.index(st.session_state.selected_year_1),
+            )
+
+        # Update session state manually if changed
+        if Month != st.session_state.selected_month_1:
+            st.session_state.selected_month_1 = Month
+            update_year()
+            st.rerun()
+
+        if Year != st.session_state.selected_year_1:
+            st.session_state.selected_year_1 = Year
+            update_month()
+            st.rerun()
+
+
+
 
         # Filter predictions_df based on user inputs
         white_filtered_data = white_prediction_df[(white_prediction_df['month'] == selected_month_num) & (white_prediction_df['year'] == Year)]
@@ -589,29 +630,36 @@ def app():
         y_wholesale_df_2 = yellow_filtered_data[['province', 'wholesale_corngrains_price']]
 
 
+        try:
+            col1, col2 = st.columns((2))
+            with col1:
+                with st.expander("White Predictions Heat Map"):
+                    st.subheader("Farmgate Price")
+                    heatmap(w_farmgate_df, 'farmgate_price', 'white_corn')
+                    st.subheader("Retail Price")
+                    heatmap(w_retail_df, 'retail_price', 'white_corn')
+                    st.subheader("Wholesale Corn Grits Price")
+                    heatmap(w_wholesale_df_1, 'wholesale_corn_grits_rice', 'white_corn')
+                    st.subheader("Wholesale Corn Grains Price")
+                    heatmap(w_wholesale_df_2, 'wholesale_corn_grains_rice', 'white_corn')
 
-        col1, col2 = st.columns((2))
-        with col1:
-            with st.expander("White Predictions Heat Map"):
-                st.subheader("Farmgate Price")
-                heatmap(w_farmgate_df, 'Farmgate Price', 'White Corn')
-                st.subheader("Retail Price")
-                heatmap(w_retail_df, 'Retail Price', 'White Corn')
-                st.subheader("Wholesale Corn Grits Price")
-                heatmap(w_wholesale_df_1, 'Wholesale Price', 'White Corn')
-                st.subheader("Wholesale Corn Grains Price")
-                heatmap(w_wholesale_df_2, 'Wholesale Price', 'White Corn')
+            with col2:
+                with st.expander("Yellow Predictions Heat Map"):
+                    st.subheader("Farmgate Price")
+                    heatmap(y_farmgate_df, 'farmgate_price', 'yellow_corn')
+                    st.subheader("Retail Price")
+                    heatmap(y_retail_df, 'retail_price', 'yellow_corn')
+                    st.subheader("Wholesale Corn Grits Price")
+                    heatmap(y_wholesale_df_1, 'wholesale_corn_grits_rice', 'yellow_corn')
+                    st.subheader("Wholesale Corn Grains Price")
+                    heatmap(y_wholesale_df_2, 'wholesale_corn_grains_rice', 'yellow_corn')
 
-        with col2:
-            with st.expander("Yellow Predictions Heat Map"):
-                st.subheader("Farmgate Price")
-                heatmap(y_farmgate_df, 'Farmgate Price', 'Yellow Corn')
-                st.subheader("Retail Price")
-                heatmap(y_retail_df, 'Retail Price', 'Yellow Corn')
-                st.subheader("Wholesale Corn Grits Price")
-                heatmap(y_wholesale_df_1, 'Wholesale Price', 'Yellow Corn')
-                st.subheader("Wholesale Corn Grains Price")
-                heatmap(y_wholesale_df_2, 'Wholesale Price', 'Yellow Corn')
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            st.error("Error: Unable to connect to the server. Please try again later.")
+            if st.button("Reload"):
+                st.rerun()
+            st.stop()  # Prevents further execution
 
 
         

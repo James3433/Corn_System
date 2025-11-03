@@ -89,7 +89,27 @@ def app():
         # In your Streamlit app or console
         comments = get_all_comments()
         comments_count = len(comments)
-    
+
+        with st.expander(f"Comments ({comments_count})"):
+            if comments and len(comments) > 0:
+                for user_id, comments in comments:
+                    fname, lname, user_type = get_user_name(user_id)
+                    img = user_type_pic[user_type]
+                    user_type = user_type_num[user_type]
+                    st.markdown(f"""
+                    <div class="comment_box">
+                        <div class="user_name">
+                            <img src="data:image/png;base64,{img}" alt="A beautiful landscape" width="30px" height="30px">
+                            <h5>{fname} {lname} ({user_type})</h5>
+                        </div>
+                        <p>{comments}</p>
+                    </div>
+            """, unsafe_allow_html=True)
+            else:
+                st.write("No comments found.")
+
+        st.text_area(label=" ", placeholder="Write your Comments Here.....", key="comments_input")
+
     except httpx.RequestError as e:  # Catch connection & request-related errors
         st.error("Connection error: Unable to connect to the server. Please try again later.")
         if st.button("Reload"):
@@ -102,25 +122,6 @@ def app():
             st.rerun()
         st.stop()  # Prevents further execution
 
-    with st.expander(f"Comments ({comments_count})"):
-        if comments and len(comments) > 0:
-            for user_id, comments in comments:
-                fname, lname, user_type = get_user_name(user_id)
-                img = user_type_pic[user_type]
-                user_type = user_type_num[user_type]
-                st.markdown(f"""
-                <div class="comment_box">
-                    <div class="user_name">
-                        <img src="data:image/png;base64,{img}" alt="A beautiful landscape" width="30px" height="30px">
-                        <h5>{fname} {lname} ({user_type})</h5>
-                    </div>
-                    <p>{comments}</p>
-                </div>
-        """, unsafe_allow_html=True)
-        else:
-            st.write("No comments found.")
-
-    st.text_area(label=" ", placeholder="Write your Comments Here.....", key="comments_input")
 
     if st.button("SEND"):
         try:

@@ -7,6 +7,8 @@ import httpx
 from plotly.subplots import make_subplots
 from supabase_connect import get_corn_price
 
+id 
+
 def app():
 
     user_type = st.session_state.get('user_type', '0')
