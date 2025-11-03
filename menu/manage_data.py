@@ -70,7 +70,7 @@ def app():
 
 
     if "selected_dataset2_num" not in st.session_state:
-        st.session_state.selected_dataset2_num = 0
+        st.session_state.selected_dataset2_num = 1
 
 
     
